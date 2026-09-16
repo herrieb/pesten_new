@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0d1117">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Pesten — Online Multiplayer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<!-- ============= LOBBY ============= -->
+<section id="screen-lobby" class="screen active">
+  <div class="lobby-wrap">
+    <div class="brand">
+      <div class="brand-mark">
+        <span class="suit-red">♦</span><span class="suit-black">♠</span>
+      </div>
+      <h1>PESTEN</h1>
+      <p class="tagline">Het Nederlandse kaartspel. Online.</p>
+    </div>
+
+    <div class="lobby-cards">
+      <div class="panel">
+        <h2>Kamer aanmaken</h2>
+        <p class="muted">Start een nieuwe tafel en nodig vrienden uit.</p>
+        <input type="text" id="create-name" placeholder="Jouw naam" maxlength="20" />
+        <button class="btn primary" id="btn-create">Kamer aanmaken</button>
+      </div>
+      <div class="panel">
+        <h2>Kamer deelnemen</h2>
+        <p class="muted">Heb je een code? Doe mee.</p>
+        <input type="text" id="join-code" placeholder="KAMERCODE" maxlength="5" style="text-transform:uppercase" />
+        <input type="text" id="join-name" placeholder="Jouw naam" maxlength="20" />
+        <button class="btn primary" id="btn-join">Deelnemen</button>
+        <button class="btn ghost" id="btn-solo">Speel tegen AI</button>
+      </div>
+    </div>
+
+    <div class="rules-link">
+      <a href="#" id="link-rules">Hoe speel je? →</a>
+    </div>
+  </div>
+</section>
+
+<!-- ============= SPECIAL CARD BANNER ============= -->
+<div id="banner" class="banner" hidden>
+  <div class="banner-inner">
+    <div class="banner-card" id="banner-card"></div>
+    <div class="banner-text" id="banner-text"></div>
+    <div class="banner-sub" id="banner-sub"></div>
+  </div>
+</div>
+
+<!-- ============= AI NAME MODAL ============= -->
+<div class="modal" id="ai-name-modal" hidden>
+  <div class="modal-card ai-modal">
+    <button class="modal-close" id="close-ai-name">×</button>
+    <h2>AI-tegenstander toevoegen</h2>
+    <p class="muted">Geef je AI-tegenstander een Nederlandse naam en kies een persoonlijkheid.</p>
+    <input type="text" id="ai-name-input" placeholder="Naam (bijv. Daan, Sanne, …)" maxlength="16" autocomplete="off" />
+    <h3 class="ai-modal-sub">Persoonlijkheid</h3>
+    <div class="ai-profiles" id="ai-profiles"></div>
+    <div class="ai-name-actions">
+      <button class="btn ghost" id="btn-ai-random">🎲 Willekeurig</button>
+      <button class="btn primary" id="btn-ai-add">Toevoegen</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============= RULES MODAL ============= -->
+<div class="modal" id="rules-modal" hidden>
+  <div class="modal-card">
+    <button class="modal-close" id="close-rules">×</button>
+    <h2>Spelregels</h2>
+    <ul class="rules">
+      <li><b>2</b> – volgende speler pakt 2 kaarten. <b>Stapelbaar</b> met nog een 2 of Joker.</li>
+      <li><b>7</b> – dump al je kaarten van die kleur in één beurt. Alleen de LAATSTE kaart telt voor het effect.</li>
+      <li><b>8</b> – de volgende speler slaat een beurt over.</li>
+      <li><b>J</b> – bepaal de volgende kleur. Altijd speelbaar.</li>
+      <li><b>K</b> – nog een beurt (extra zet).</li>
+      <li><b>A</b> – draai de richting om. (Bij 2 spelers: gewoon passen.)</li>
+      <li><b>Joker</b> – volgende speler pakt 5 kaarten. Stapelbaar. Die speler bepaalt de volgende kleur.</li>
+    </ul>
+    <p class="muted">Match op <b>kleur of rang</b>. Je mag pakken als je niet kunt spelen. Na het pakken van een stapel mag je spelen, pakken of passen. Je kunt niet <b>winnen</b> met een effectkaart.</p>
+  </div>
+</div>
+
+<!-- ============= WAITING ROOM ============= -->
+<section id="screen-room" class="screen">
+  <div class="room-wrap">
+    <header class="room-header">
+      <div class="brand-mini"><span class="suit-red">♦</span><span class="suit-black">♠</span> PESTEN</div>
+      <div class="room-code-box">
+        <span class="muted">KAMER</span>
+        <span id="room-code-display" class="code">—</span>
+        <button class="btn tiny ghost" id="btn-copy-code">Kopieer</button>
+      </div>
+      <div class="you-name"><span id="you-label">Jij</span></div>
+    </header>
+
+    <div class="room-main">
+      <div class="players-panel">
+        <h3>Spelers <span id="players-count" class="muted">(0/4)</span></h3>
+        <ul id="players-list" class="players-list"></ul>
+        <div class="room-actions">
+          <button class="btn ghost" id="btn-add-ai">+ AI tegenstander toevoegen</button>
+          <button class="btn primary" id="btn-start" disabled>Start spel</button>
+        </div>
+      </div>
+
+      <aside class="chat-panel">
+        <h3>Chat</h3>
+        <div id="chat-log" class="chat-log"></div>
+        <form id="chat-form" class="chat-form">
+          <input type="text" id="chat-input" placeholder="Zeg iets…" maxlength="240" autocomplete="off" />
+          <button class="btn primary tiny" type="submit">Stuur</button>
+        </form>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<!-- ============= GAME ============= -->
+<section id="screen-game" class="screen">
+  <div class="game-wrap">
+    <!-- Top bar -->
+    <header class="game-top">
+      <div class="brand-mini"><span class="suit-red">♦</span><span class="suit-black">♠</span> PESTEN</div>
+      <div class="game-status">
+        <div class="status-line">
+          <span id="turn-indicator" class="turn-pill">—</span>
+          <span id="dir-indicator" class="dir-pill">→</span>
+          <span id="pending-indicator" class="pending-pill" hidden>—</span>
+          <span id="declared-indicator" class="declared-pill" hidden>—</span>
+        </div>
+      </div>
+      <div class="game-actions">
+        <button class="btn ghost tiny" id="btn-rules-game">Regels</button>
+        <button class="btn ghost tiny" id="btn-leave">Verlaten</button>
+      </div>
+    </header>
+
+    <!-- Opponents row -->
+    <div class="opponents" id="opponents-row"></div>
+
+    <!-- Center: stock + discard -->
+    <div class="game-table-wrap">
+      <div class="table-center">
+        <div class="pile stock-pile" id="stock-pile" title="Voorraad">
+          <div class="card-back"></div>
+          <div class="pile-count" id="stock-count">—</div>
+        </div>
+        <div class="pile discard-pile" id="discard-pile" title="Aflegstapel">
+          <!-- discard card is rendered here -->
+        </div>
+        <div class="last-three" id="last-three"></div>
+      </div>
+
+      <!-- Game chat -->
+      <aside class="game-chat-panel" id="game-chat-panel">
+        <div class="chat-head">
+          <h3>Chat</h3>
+          <button class="btn tiny ghost chat-toggle" id="btn-chat-toggle" type="button"><span class="toggle-arrow"></span></button>
+        </div>
+        <div class="chat-body" id="game-chat-body">
+          <div id="game-chat-log" class="chat-log"></div>
+          <form id="game-chat-form" class="chat-form">
+            <input type="text" id="game-chat-input" placeholder="Zeg iets…" maxlength="240" autocomplete="off" />
+            <button class="btn primary tiny" type="submit">Stuur</button>
+          </form>
+        </div>
+      </aside>
+    </div>
+
+    <!-- Action log -->
+    <div class="action-log" id="action-log"></div>
+
+    <!-- Your hand -->
+    <div class="your-hand-wrap">
+      <div class="your-info">
+        <span class="your-label">Jouw hand</span>
+        <span id="hand-count" class="muted">0 kaarten</span>
+      </div>
+      <div class="your-hand" id="your-hand"></div>
+    </div>
+
+    <!-- Action buttons -->
+    <div class="action-bar" id="action-bar">
+      <button class="btn ghost" id="btn-draw">Pakken</button>
+      <button class="btn ghost" id="btn-take" hidden>Pak</button>
+      <button class="btn ghost" id="btn-skip" hidden>Passen</button>
+      <button class="btn ghost" id="btn-play-drawn" hidden>Speel getrokken</button>
+      <button class="btn ghost" id="btn-pass-drawn" hidden>Bewaren</button>
+      <button class="btn ghost" id="btn-skip-after-take" hidden>Passen</button>
+    </div>
+
+    <!-- Suit chooser modal -->
+    <div class="modal" id="suit-modal" hidden>
+      <div class="modal-card">
+        <h2>Kies de volgende kleur</h2>
+        <p class="muted">Je hebt net een J of Joker gespeeld.</p>
+        <div class="suit-picker">
+          <button class="suit-btn suit-red" data-suit="♦">♦</button>
+          <button class="suit-btn suit-black" data-suit="♣">♣</button>
+          <button class="suit-btn suit-red" data-suit="♥">♥</button>
+          <button class="suit-btn suit-black" data-suit="♠">♠</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Game over modal -->
+    <div class="modal" id="gameover-modal" hidden>
+      <div class="modal-card center">
+        <h2 id="gameover-title">Spel afgelopen</h2>
+        <p id="gameover-msg" class="muted"></p>
+        <button class="btn primary" id="btn-back-lobby">Terug naar lobby</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="/js/dutch-names.js"></script>
+<script src="/js/game-client.js"></script>
+<script src="/js/ui.js"></script>
+</body>
+</html>
