@@ -1,0 +1,11 @@
+{
+  "card.joker": "JOKER",
+  "card.jack": "BOER",
+  "card.queen": "VROUW",
+  "card.king": "KONING",
+  "card.avatar_alt": "avatar {number}",
+  "card.suit.club": "klaver",
+  "card.suit.diamond": "ruiten",
+  "card.suit.heart": "harten",
+  "card.suit.spade": "schoppen"
+}

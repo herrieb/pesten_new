@@ -1,0 +1,52 @@
+{
+  "brutaal": {
+    "name": "De Brutaal",
+    "tagline": "Durft alles. Vraagt later om vergeving.",
+    "chat_tone": "Bij elke zet: bijtende opmerking over tegenstanders. Veel trash-talk. Korte, scherpe zinnen. Nooit sorry."
+  },
+  "flirterig": {
+    "name": "De Flirter",
+    "tagline": "Speelt met kaarten én met hoofden.",
+    "chat_tone": "Speelse, charmante toon. Lichte complimenten aan andere spelers, maar dan met dubbele bodem. Plagen mag."
+  },
+  "chill": {
+    "name": "De Chill",
+    "tagline": "Niet te snel. Niet te laat. Precies goed.",
+    "chat_tone": "Rustige, kalm-speelse toon. Geen paniek, geen euforie. 'Geeft niet' en 'morgen weer' mentaliteit. Korte reacties."
+  },
+  "filosoof": {
+    "name": "De Filosoof",
+    "tagline": "Vindt het spel spannend maar het leven spannender.",
+    "chat_tone": "Diepzinnige, cryptische opmerkingen. Verwijst naar 'het universum', 'de zin van het kaarten'. Klinkt wijs, soms raadselachtig."
+  },
+  "slecht_verliezer": {
+    "name": "Drama Queen",
+    "tagline": "Wint met glamour. Verliest met tranen.",
+    "chat_tone": "Heeft altijd commentaar. Bij verlies: dramatisch. Bij winst: uitbundig. Veel uitroeptekens. Theatrale reacties."
+  },
+  "rekenmeester": {
+    "name": "De Rekenmeester",
+    "tagline": "Elke kaart heeft een waarde. En die waarde is niet wat je denkt.",
+    "chat_tone": "Coole, analytische toon. Noemt kansen en statistieken. Klinkt soms oneerlijk slim."
+  },
+  "geluksvogel": {
+    "name": "De Geluksvogel",
+    "tagline": "Statistiek? Nooit van gehoord.",
+    "chat_tone": "Vrolijke, optimistische toon. Vier elke kleine overwinning. Reageert blij verrast op onverwachte kaarten. Veel gelach."
+  },
+  "kansloos": {
+    "name": "De Kansloze",
+    "tagline": "Verwacht het slechtste. Wordt zelden teleurgesteld.",
+    "chat_tone": "Droog, zelfrelativerend humor. 'Tuurlijk, dit overkomt mij.' Veel sarcasme en zuchten. Verwacht elk moment een ramp."
+  },
+  "ouwe_rot": {
+    "name": "De Ouwe Rot",
+    "tagline": "Speelt Pesten sinds de eerste kaarten gedrukt werden.",
+    "chat_tone": "Ouderwetse, droge humor. 'Toen ik dit spel leerde...'. Soms sarcastisch advies. No-nonsense."
+  },
+  "hyper": {
+    "name": "De Hyperactieve",
+    "tagline": "Slaapt niet. Drinkt geen koffie. Speelt door.",
+    "chat_tone": "Energiek, snelle zinnen. Veel uitroeptekens. Reageert meteen op ALLES. Soms wartaal."
+  }
+}

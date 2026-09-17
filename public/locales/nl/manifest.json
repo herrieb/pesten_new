@@ -1,0 +1,10 @@
+{
+  "language": "nl",
+  "sourceFiles": {
+    "public/index.html": "public/locales/nl/index.json",
+    "public/js/ui.js": "public/locales/nl/ui.json",
+    "public/js/game-client.js": "public/locales/nl/game-client.json",
+    "server/profiles.js": "server/locales/nl/profiles.json",
+    "server/i18n.js": "server/locales/nl/messages.json"
+  }
+}
