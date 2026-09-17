@@ -254,7 +254,8 @@ function applyPlay(game, playerIndex, cardIndex) {
 
   // If this card is a J or Joker, set pendingSuit flag (player will choose next).
   if (card.r === 'J') {
-    p.pendingSuit = 'choose'; // client must send 'declareSuit' action
+    p.pendingSuit = 'choose';
+    game.pendingSuitPlayer = playerIndex; // client must send 'declareSuit' action
   } else if (card.r === 'JKR') {
     p.pendingSuit = 'choose'; // next player chooses suit
     game.pendingTake += 5;
