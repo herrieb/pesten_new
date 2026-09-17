@@ -555,6 +555,13 @@ $('#ai-name-input').addEventListener('keydown', (e) => {
   }
 });
 
+$('#btn-close-room').addEventListener('click', () => {
+  if (!confirm('Kamer sluiten voor alle spelers?')) return;
+  client.closeRoom((res) => {
+    if (!res || !res.ok) alert(res?.error || 'Kamer sluiten mislukt');
+  });
+});
+
 $('#btn-leave').addEventListener('click', () => {
   client.leaveRoom(() => {
     client.code = null;
@@ -591,6 +598,7 @@ function renderRoom(state) {
   // Start button enable
   const isHost = state.youIndex === 0;
   $('#btn-start').disabled = !(isHost && state.players.length >= 2);
+  $('#btn-close-room').disabled = !isHost;
 }
 
 // ============================================================

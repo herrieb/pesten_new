@@ -180,6 +180,7 @@ class PestenClient {
   removeAi(id, ack) { this.emit('removeAi', { aiId: id }, ack); }
   leaveRoom(ack) { this.emit('leaveRoom', {}, ack); }
   endGame(ack) { this.emit('endGame', {}, ack); }
+  closeRoom(ack) { this.emit('closeRoom', {}, ack); }
 }
 
 function avatarUrl(file) {
