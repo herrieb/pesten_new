@@ -40,6 +40,7 @@ function buildShoe(numPlayers) {
 }
 
 function cardName(c) {
+  if (c.r === 'JKR') return 'Joker';
   return `${c.r}${c.s}`;
 }
 
