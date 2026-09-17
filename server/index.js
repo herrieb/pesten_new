@@ -98,10 +98,11 @@ io.on('connection', (socket) => {
     cb && cb({ ok: true, profiles: pub });
   });
 
-  socket.on('create', ({ name, avatar, username, password, playerId }, ack) => {
+  socket.on('create', ({ name, avatar, username, password, playerId, language }, ack) => {
       const cb = typeof ack === 'function' ? ack : null;
       const code = nanoid();
       const room = getRoom(code);
+      room.language = ['nl', 'en', 'tr'].includes(language) ? language : (room.language || 'nl');
       // Resolve identity. Three paths:
       //   1. Authenticated: username + password
       //   2. Returning user with stored playerId matches a known account
@@ -540,7 +541,7 @@ async function maybeAiRespond(code, lastMsg, opts = {}) {
     const otherAiNames = aiPlayers.filter(p => p.id !== responder.id).map(p => p.name);
     const reply = await ai.aiChat(lastMsg, room.chat.slice(-10),
       responder.profileKey ? profiles[responder.profileKey] : null,
-      otherAiNames);
+      otherAiNames, room.language);
     if (reply && reply.trim()) {
       const cleanReply = reply.trim();
       // Detect @-mention in the AI's reply text for potential chain reply
@@ -689,7 +690,7 @@ async function maybeRunAiTurn(code) {
   }
 
   if (room.game.pendingTake > 0) {
-    const decision = await ai.aiDecide(room.game, turnPlayer, chatCtx, currentProfile(room));
+    const decision = await ai.aiDecide(room.game, turnPlayer, chatCtx, currentProfile(room), room.language);
     if (decision.action === 'play' && typeof decision.index === 'number') {
       const card = turnPlayer.hand[decision.index];
       if (game.isStackable(card)) {

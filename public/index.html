@@ -24,14 +24,15 @@
         <span class="suit-red">♦</span><span class="suit-black">♠</span>
       </div>
       <h1>PESTEN</h1>
-      <p class="tagline">Kies je profiel en speel mee.</p>
+      <p class="tagline" data-i18n="Kies je profiel en speel mee.">Kies je profiel en speel mee.</p>
+      <label class="language-choice">Taal <select id="language-select"><option value="nl">Nederlands</option><option value="en">English</option><option value="tr">Türkçe</option></select></label>
     </div>
 
     <div class="auth-card panel">
       <div class="auth-tabs">
-        <button class="auth-tab active" data-tab="guest">Snel gast</button>
-        <button class="auth-tab" data-tab="login">Inloggen</button>
-        <button class="auth-tab" data-tab="register">Registreren</button>
+        <button class="auth-tab active" data-tab="guest" data-i18n="Snel gast">Snel gast</button>
+        <button class="auth-tab" data-tab="login" data-i18n="Inloggen">Inloggen</button>
+        <button class="auth-tab" data-tab="register" data-i18n="Registreren">Registreren</button>
       </div>
 
       <!-- GUEST -->
@@ -41,7 +42,7 @@
         <input type="text" id="auth-guest-name" placeholder="Jouw naam" maxlength="20" />
         <label class="muted small">Kies een avatar</label>
         <div class="avatar-grid" id="avatar-grid-guest"></div>
-        <button class="btn primary" id="btn-auth-guest" disabled>Verder</button>
+        <button class="btn primary" id="btn-auth-guest" data-i18n="Verder" disabled>Verder</button>
       </div>
 
       <!-- LOGIN -->
@@ -66,7 +67,7 @@
         <input type="text" id="auth-reg-name" placeholder="valt terug op gebruikersnaam" maxlength="20" />
         <label class="muted small">Kies een avatar</label>
         <div class="avatar-grid" id="avatar-grid-register"></div>
-        <button class="btn primary" id="btn-auth-register" disabled>Account aanmaken</button>
+        <button class="btn primary" id="btn-auth-register" data-i18n="Account aanmaken" disabled>Account aanmaken</button>
         <p class="auth-msg" id="auth-reg-msg"></p>
       </div>
     </div>
@@ -109,7 +110,7 @@
     </div>
 
     <div class="panel available-games" id="available-games">
-      <h2>Beschikbare spellen</h2>
+      <h2 data-i18n="Beschikbare spellen">Beschikbare spellen</h2>
       <div id="public-rooms"><p class="muted">Laden…</p></div>
     </div>
 
@@ -327,6 +328,7 @@
 </section>
 
 <script src="/socket.io/socket.io.js"></script>
+<script src="/js/i18n.js"></script>
 <script src="/js/dutch-names.js"></script>
 <script src="/js/game-client.js"></script>
 <script src="/js/ui.js"></script>
@@ -347,12 +349,23 @@
 
   document.addEventListener('DOMContentLoaded', () => {
     bindAuthScreen();
+    const languageSelect = document.querySelector('#language-select');
+    if (languageSelect) {
+      languageSelect.value = client.language || 'nl';
+      applyLanguage(client.language || 'nl');
+      languageSelect.addEventListener('change', () => {
+        client.language = languageSelect.value;
+        client.saveToStorage();
+        applyLanguage(client.language);
+      });
+    }
     // Try to resume a previous session
     const stored = JSON.parse(localStorage.getItem('pesten.auth') || 'null');
     if (stored && stored.playerId && stored.name) {
       client.playerId = stored.playerId;
       client.name = stored.name;
       client.avatar = stored.avatar;
+      client.language = stored.language || 'nl';
       client.accountId = stored.accountId;
       // Try rejoin to last room
       const lastRoom = stored.lastRoom;

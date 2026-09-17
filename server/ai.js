@@ -8,8 +8,12 @@ const API_KEY = process.env.OLLAMA_API_KEY || process.env.AI_API_KEY || '';
 const BASE_URL = (process.env.OLLAMA_BASE_URL || process.env.AI_BASE_URL || 'https://ollama.com').replace(/\/+$/, '');
 const MODEL = process.env.OLLAMA_MODEL || process.env.AI_MODEL || 'minimax-m3';
 
-function systemPrompt() {
-  return `Je speelt Pesten, een Nederlands kaartspel vergelijkbaar met UNO. Je bent een AI-tegenstander aan een casinotafel. Je praat met de andere spelers in het Nederlands.
+function languageInstruction(language) {
+  return { nl: 'Nederlands', en: 'English', tr: 'Türkçe' }[language] || 'Nederlands';
+}
+
+function systemPrompt(language = 'nl') {
+  return `Je speelt Pesten, een Nederlands kaartspel vergelijkbaar met UNO. Je bent een AI-tegenstander aan een casinotafel. Praat uitsluitend in ${languageInstruction(language)}.
 
 # SPELREGELS
 - Standaard 54-kaarten deck (52 + 2 jokers). Met 2 spelers: 1 deck. 3-4 spelers: 2 decks.
@@ -179,7 +183,7 @@ function profileContext(profile) {
   return lines.join('\n');
 }
 
-async function aiDecide(gameState, aiPlayer, chatHistory, profile) {
+async function aiDecide(gameState, aiPlayer, chatHistory, profile, language = 'nl') {
   const hand = aiPlayer.hand;
   const top = gameState.discard[gameState.discard.length - 1];
   const legal = [];
@@ -205,7 +209,7 @@ async function aiDecide(gameState, aiPlayer, chatHistory, profile) {
   const profileSuffix = profile ? profileContext(profile) : '';
 
   const messages = [
-    { role: 'system', content: systemPrompt() + profileSuffix },
+    { role: 'system', content: systemPrompt(language) + profileSuffix },
     { role: 'user', content: userPrompt(gameState, hand, options, chatHistory) },
   ];
 
@@ -248,8 +252,8 @@ async function aiDecide(gameState, aiPlayer, chatHistory, profile) {
   return parsed;
 }
 
-async function aiChat(messages, chatHistory, profile, otherAiNames) {
-  const sys = `Je bent een AI-tegenstander in een potje Pesten (Nederlands kaartspel, vergelijkbaar met UNO) die casual kletst met de andere speler aan tafel.
+async function aiChat(messages, chatHistory, profile, otherAiNames, language = 'nl') {
+  const sys = `Je bent een AI-tegenstander in een potje Pesten (Nederlands kaartspel, vergelijkbaar met UNO) die casual kletst met de andere speler aan tafel. Schrijf uitsluitend in ${languageInstruction(language)}.
 
 PERSOONLIJKHEID: zelfverzekerd, een beetje brutaal, casinogast. Lichte trash-talk is prima.
 CHATREGELS:
@@ -277,4 +281,4 @@ Recente spelcontext (voor kleur, citeer niet): je speelt nu een potje Pesten.`;
   }
 }
 
-module.exports = { aiDecide, aiChat, MODEL };
+module.exports = { aiDecide, aiChat, MODEL, languageInstruction };

@@ -71,3 +71,7 @@ pesten/
         ├── game-client.js  # card renderer + socket
         └── ui.js           # UI controller
 ```
+
+## Languages
+
+The interface supports Nederlands (`nl`), English (`en`), and Türkçe (`tr`). The selected language is saved per player session and is used for AI responses. Chat messages are not translated.

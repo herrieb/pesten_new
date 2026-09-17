@@ -92,6 +92,7 @@ class PestenClient {
     this.name = null;
     this.avatar = null;
     this.accountId = null; // username if registered, null for guest
+    this.language = 'nl';
     this.listeners = {};
     this.loadFromStorage();
   }
@@ -103,6 +104,7 @@ class PestenClient {
         this.name = stored.name || null;
         this.avatar = stored.avatar || null;
         this.accountId = stored.accountId || null;
+        this.language = stored.language || 'nl';
         this.lastRoom = stored.lastRoom || null;
       }
     } catch (e) {}
@@ -113,6 +115,7 @@ class PestenClient {
       name: this.name,
       avatar: this.avatar,
       accountId: this.accountId,
+      language: this.language,
       lastRoom: this.code,
     }));
   }
@@ -143,6 +146,7 @@ class PestenClient {
     });
   }
   create(opts, ack) {
+    opts.language = this.language;
     // opts: { name, avatar, username?, password?, playerId? }
     this.emit('create', opts, ack);
   }
