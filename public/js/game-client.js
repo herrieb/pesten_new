@@ -179,6 +179,7 @@ class PestenClient {
   addAi(name, profileKey, ack) { this.emit('addAi', { name, profileKey }, ack); }
   removeAi(id, ack) { this.emit('removeAi', { aiId: id }, ack); }
   leaveRoom(ack) { this.emit('leaveRoom', {}, ack); }
+  endGame(ack) { this.emit('endGame', {}, ack); }
 }
 
 function avatarUrl(file) {

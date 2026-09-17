@@ -467,6 +467,25 @@ io.on('connection', (socket) => {
     broadcast(currentRoom);
   });
 
+  socket.on('endGame', (payload, ack) => {
+    const cb = typeof ack === 'function' ? ack : (typeof payload === 'function' ? payload : null);
+    if (!currentRoom) return cb && cb({ ok: false, error: 'Geen actieve kamer' });
+    const code = currentRoom;
+    const room = rooms.get(code);
+    const idx = room ? findPlayerIndex(room, playerId) : -1;
+    if (!room || idx !== 0) return cb && cb({ ok: false, error: 'Alleen de host kan het spel beëindigen' });
+
+    for (const sockId of room.sockets.keys()) {
+      io.to(sockId).emit('roomClosed', { code });
+    }
+    rooms.delete(code);
+    room.sockets.clear();
+    currentRoom = null;
+    playerId = null;
+    broadcastRooms();
+    cb && cb({ ok: true, closed: true });
+  });
+
   socket.on('leaveRoom', (payload, ack) => {
     const cb = typeof ack === 'function' ? ack : (typeof payload === 'function' ? payload : null);
     if (!currentRoom) return cb && cb({ ok: true });
