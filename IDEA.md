@@ -7,7 +7,7 @@ A Dutch card game similar to UNO, played with a standard 52-card deck plus 2 jok
 - 2+ players (rules below assume 2 unless stated).
 - Each player is dealt **7 cards**.
 - The dealer flips the top card from the deck face-up to start the discard pile.
-- Effects on the dealer's flipped card apply normally.
+- Effects on the dealer's flipped card apply normally; the resulting turn is shown to all players.
 
 ## Card effects
 
@@ -19,7 +19,7 @@ A Dutch card game similar to UNO, played with a standard 52-card deck plus 2 jok
 | **8** | Next player skips their turn. |
 | **J** | Declare the next suit. Always playable. |
 | **K** | Play again (extra turn). |
-| **Joker** | Next player draws 5. **Stackable.** The player who took the Joker declares the next suit (whether they play, draw, or skip afterward). |
+| **Joker** | Next player draws 5. **Stackable.** The next player immediately declares the next suit before stacking or taking. |
 
 ## Card play rules
 
@@ -50,7 +50,7 @@ A Dutch card game similar to UNO, played with a standard 52-card deck plus 2 jok
 - You choose the **order** in which they go on the pile.
 - **Only the LAST card's effect counts.** Everything else on top is treated as a plain number/rank for effect purposes (a 2 in the middle does not add to a stack, a K in the middle does not give an extra turn, etc.).
   - Example: hand = `7♥, 3♥, 5♥, K♥, 9♥`. Play them in that order. Result: suit dumped, next player must play a heart or a 9. No extra turn, no extra draw.
-- The **7 itself is still an effect card**, so it cannot be your winning card even when dumped last.
+- The **7 must always be first** in the rits. Any card may be last, including an effect card; the value/effect of that last card applies normally.
 - After dumping, your turn ends (no draw).
 
 ## Ace with 2 players

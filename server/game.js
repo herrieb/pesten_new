@@ -99,6 +99,29 @@ function addPlayer(game, id, name, avatar) {
   return true;
 }
 
+function applyOpeningEffects(game) {
+  const top = game.discard[game.discard.length - 1];
+  if (!top) return;
+  game.pendingTake = 0;
+  game.declaredSuit = null;
+  game.pendingSuitPlayer = null;
+  if (top.r === 'A') game.direction *= -1;
+  if (top.r === '2') game.pendingTake += 2;
+  if (top.r === '8') game.skipNext += 1;
+  if (top.r === 'K') game.extraTurn += 1;
+  if (top.r === 'J') {
+    game.pendingSuitPlayer = game.turn;
+    return;
+  }
+  if (top.r === 'JKR') {
+    game.pendingTake += 5;
+    advanceTurn(game);
+    game.pendingSuitPlayer = game.turn;
+    return;
+  }
+  advanceTurn(game);
+}
+
 function startGame(game) {
   const needed = game.players.length * 7 + 1;
   let shoe = buildShoe(game.players.length);
@@ -110,7 +133,7 @@ function startGame(game) {
       if (game.deck.length) p.hand.push(game.deck.pop());
     }
   }
-  game.discard.push(game.deck.pop());
+  game.discard = [game.deck.pop()];
   game.phase = 'playing';
   game.turn = 0;
   game.direction = 1;
@@ -120,6 +143,7 @@ function startGame(game) {
   game.declaredSuit = null;
   game.pendingSuitPlayer = null;
   game.winner = null;
+  applyOpeningEffects(game);
   game.lastActions.push({ msg: `Spel gestart met ${game.players.length} speler${game.players.length === 1 ? '' : 's'}, ${game.decksUsed} deck${game.decksUsed === 1 ? '' : 's'}`, kind: 'sys' });
 }
 
@@ -204,7 +228,7 @@ function applyDump(game, playerIndex, sevenIndex, order) {
 
   const suit = sevenCard.s;
   // order: array of hand indices to play. First must be the 7.
-  // Validate: every index must refer to a same-suit card, and last card must NOT be an effect card.
+  // Every index must refer to a same-suit card. The last card may be an effect card.
   if (!Array.isArray(order) || order.length < 1) return { ok: false, reason: 'Geen volgorde' };
   if (order[0] !== sevenIndex) return { ok: false, reason: 'De 7 moet als eerste worden gespeeld' };
   if (new Set(order).size !== order.length) return { ok: false, reason: 'Een kaart mag maar één keer voorkomen' };
@@ -217,11 +241,7 @@ function applyDump(game, playerIndex, sevenIndex, order) {
     if (c.s !== suit) return { ok: false, reason: `Kaart ${cardName(c)} is niet van ${suit}` };
     cards.push(c);
   }
-  // Last card effect-check: must NOT be an effect card (must be a number card)
   const lastCard = cards[cards.length - 1];
-  if (['A','2','7','8','J','K','JKR'].includes(lastCard.r)) {
-    return { ok: false, reason: 'Laatste kaart moet een getal zijn (3-10)' };
-  }
   // Remove the dumped cards from the hand in reverse order so indices stay valid
   const sortedIdx = [...order].sort((a, b) => b - a);
   for (const idx of sortedIdx) {
@@ -233,14 +253,24 @@ function applyDump(game, playerIndex, sevenIndex, order) {
     msg: `${p.name} dumpt ${cards.length} ${suit} kaart${cards.length === 1 ? '' : 'en'} via 7${suit} (laatste: ${cardName(lastCard)})`,
     kind: 'effect',
   });
-  // Win check: if hand is now empty AND last card is a number, the player wins
+  if (lastCard.r === 'A') game.direction *= -1;
+  else if (lastCard.r === '2') game.pendingTake += 2;
+  else if (lastCard.r === '8') game.skipNext += 1;
+  else if (lastCard.r === 'K') game.extraTurn += 1;
+  else if (lastCard.r === 'J') game.pendingSuitPlayer = playerIndex;
+  else if (lastCard.r === 'JKR') {
+    game.pendingTake += 5;
+    advanceTurn(game);
+    game.pendingSuitPlayer = game.turn;
+  }
+  // Effect cards cannot win; draw one replacement if the dump emptied the hand.
   if (p.hand.length === 0 && isNumber(lastCard)) {
     game.winner = playerIndex;
     game.phase = 'ended';
     return { ok: true, requires: null, winner: true };
   }
-  // The 7 effect: the next player must play same-suit OR same-rank as lastCard
-  return { ok: true, requires: null };
+  if (p.hand.length === 0) p.hand.push(...takeFromStock(game, 1));
+  return { ok: true, requires: (lastCard.r === 'J' || lastCard.r === 'JKR') ? 'declareSuit' : null };
 }
 
 function applyPlay(game, playerIndex, cardIndex) {
@@ -378,5 +408,5 @@ module.exports = {
   publicState,
   canPlayCard, applyPlay, declareSuit,
   applyTake, applyDraw, applySkip,
-  advanceTurn, applyDump,
+  advanceTurn, applyDump, applyOpeningEffects,
 };

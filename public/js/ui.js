@@ -927,19 +927,13 @@ function renderSevenCards() {
       tag.className = 'last-tag';
       tag.textContent = isEffect(card) ? 'LAATSTE (effect)' : 'LAATSTE';
       el.appendChild(tag);
-      if (isEffect(card)) {
-        el.classList.add('invalid');
-        hint.textContent = '✗ Laatste kaart moet een getal zijn (3-10). Sleep een andere kaart naar achter.';
-        hint.className = 'seven-hint invalid';
-        $('#btn-seven-confirm').disabled = true;
-      } else {
-        hint.textContent = `✓ Je laatste kaart is ${cardName(card)} — alleen het effect hiervan telt.`;
-        hint.className = 'seven-hint valid';
-        $('#btn-seven-confirm').disabled = false;
-      }
+      hint.textContent = `✓ Je laatste kaart is ${cardName(card)} — de waarde/het effect hiervan telt.`;
+      hint.className = 'seven-hint valid';
+      $('#btn-seven-confirm').disabled = false;
     }
     // Drag handlers
     el.addEventListener('dragstart', (ev) => {
+      if (pos === 0) { ev.preventDefault(); return; }
       ev.dataTransfer.setData('text/plain', String(pos));
       el.classList.add('dragging');
     });
@@ -953,7 +947,7 @@ function renderSevenCards() {
       ev.preventDefault();
       const fromPos = parseInt(ev.dataTransfer.getData('text/plain'), 10);
       const toPos = parseInt(el.dataset.pos, 10);
-      if (Number.isNaN(fromPos) || Number.isNaN(toPos) || fromPos === toPos) return;
+      if (Number.isNaN(fromPos) || Number.isNaN(toPos) || fromPos === toPos || fromPos === 0 || toPos === 0) return;
       const [moved] = sevenCards.splice(fromPos, 1);
       sevenCards.splice(toPos, 0, moved);
       renderSevenCards();
@@ -1015,6 +1009,7 @@ function onStockClick() {
 $('#btn-draw').addEventListener('click', onStockClick);
 
 $('#btn-take').addEventListener('click', () => {
+  showBanner({ r: '7', s: '♣' }, { text: 'Grabble Grabble!', sub: 'Kaarten pakken maar', tone: 'take2', duration: 1400 });
   client.take((res) => {
     if (res && res.ok) {
       // After taking, must declare suit if top is Joker

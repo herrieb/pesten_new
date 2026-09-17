@@ -297,8 +297,10 @@ io.on('connection', (socket) => {
     const result = game.applyDump(room.game, idx, sevenIndex, order);
     if (!result.ok) return cb && cb(result);
     logAction(currentRoom, t.dumped(playerName, order.length, room.game.discard[room.game.discard.length - order.length].s), 'effect');
-    if (room.game.winner === null || room.game.winner === undefined) game.advanceTurn(room.game);
-    cb && cb({ ok: true });
+    if (room.game.winner === null || room.game.winner === undefined) {
+      if (!result.requires) game.advanceTurn(room.game);
+    }
+    cb && cb({ ok: true, requires: result.requires });
     broadcast(currentRoom);
   });
 
