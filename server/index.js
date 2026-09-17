@@ -276,7 +276,7 @@ io.on('connection', (socket) => {
         game.advanceTurn(room.game);
       }
     }
-    cb && cb({ ok: true, requires: result.requires });
+    cb && cb({ ok: true, requires: result.requires, chooser: card.r === 'JKR' ? room.game.pendingSuitPlayer : idx });
     broadcast(currentRoom);
   });
 
@@ -300,7 +300,7 @@ io.on('connection', (socket) => {
     if (room.game.winner === null || room.game.winner === undefined) {
       if (!result.requires) game.advanceTurn(room.game);
     }
-    cb && cb({ ok: true, requires: result.requires });
+    cb && cb({ ok: true, requires: result.requires, chooser: result.requires ? room.game.pendingSuitPlayer : null });
     broadcast(currentRoom);
   });
 
@@ -370,7 +370,7 @@ io.on('connection', (socket) => {
         game.advanceTurn(room.game);
       }
     }
-    cb && cb({ ok: true, requires: result.requires });
+    cb && cb({ ok: true, requires: result.requires, chooser: result.requires ? room.game.pendingSuitPlayer : null });
     broadcast(currentRoom);
   });
 

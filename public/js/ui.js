@@ -873,7 +873,7 @@ function onCardClick(i) {
       alert(res?.error || 'Kan deze kaart niet spelen');
       return;
     }
-    if (res.requires === 'declareSuit') {
+    if (res.requires === 'declareSuit' && (res.chooser === undefined || res.chooser === client.state.youIndex)) {
       pendingSuitFromPlay = true;
       openSuitModal();
     }
@@ -974,7 +974,7 @@ $('#btn-seven-confirm').addEventListener('click', () => {
     if (res && res.ok) {
       closeSevenModal();
       lastDrawnCard = null;
-      if (res.requires === 'declareSuit') {
+      if (res.requires === 'declareSuit' && (res.chooser === undefined || res.chooser === client.state.youIndex)) {
         pendingSuitFromPlay = true;
         openSuitModal();
       }
@@ -1040,7 +1040,7 @@ $('#btn-play-drawn').addEventListener('click', () => {
       return;
     }
     lastDrawnCard = null;
-    if (res.requires === 'declareSuit') {
+    if (res.requires === 'declareSuit' && (res.chooser === undefined || res.chooser === client.state.youIndex)) {
       pendingSuitFromPlay = true;
       openSuitModal();
     }
