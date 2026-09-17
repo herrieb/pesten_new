@@ -78,8 +78,8 @@ io.on('connection', (socket) => {
   let playerName = null;
 
   // Client can fetch the list of available AI personality profiles
-  socket.on('listRooms', (ack) => {
-    const cb = typeof ack === 'function' ? ack : null;
+  socket.on('listRooms', (payload, ack) => {
+    const cb = typeof ack === 'function' ? ack : (typeof payload === 'function' ? payload : null);
     cb && cb({ ok: true, rooms: publicRooms() });
   });
 
