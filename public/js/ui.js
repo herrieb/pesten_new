@@ -534,7 +534,12 @@ $('#ai-name-input').addEventListener('keydown', (e) => {
 });
 
 $('#btn-leave').addEventListener('click', () => {
-  location.reload();
+  client.leaveRoom(() => {
+    client.code = null;
+    client.state = null;
+    client.saveToStorage();
+    enterLobby();
+  });
 });
 
 function renderRoom(state) {
@@ -1100,7 +1105,13 @@ function maybeShowGameOver(state) {
   }
 }
 $('#btn-back-lobby').addEventListener('click', () => {
-  location.reload();
+  client.leaveRoom(() => {
+    client.code = null;
+    client.state = null;
+    client.saveToStorage();
+    $('#gameover-modal').hidden = true;
+    enterLobby();
+  });
 });
 
 // ============================================================

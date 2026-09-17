@@ -442,6 +442,26 @@ io.on('connection', (socket) => {
     broadcast(currentRoom);
   });
 
+  socket.on('leaveRoom', (ack) => {
+    const cb = typeof ack === 'function' ? ack : null;
+    if (!currentRoom) return cb && cb({ ok: true });
+    const code = currentRoom;
+    const room = rooms.get(code);
+    if (room) {
+      const idx = findPlayerIndex(room, playerId);
+      if (idx >= 0) {
+        room.game.players[idx].connected = false;
+        logAction(code, t.disconnected(playerName), 'leave');
+      }
+      room.sockets.delete(socket.id);
+      socket.leave(code);
+      broadcast(code);
+    }
+    currentRoom = null;
+    playerId = null;
+    cb && cb({ ok: true });
+  });
+
   socket.on('disconnect', () => {
     if (!currentRoom) return;
     const room = getRoom(currentRoom);
