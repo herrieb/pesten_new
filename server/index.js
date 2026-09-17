@@ -474,6 +474,19 @@ io.on('connection', (socket) => {
     const room = rooms.get(code);
     if (room) {
       const idx = findPlayerIndex(room, playerId);
+      if (idx >= 0 && room.game.phase === 'ended' && idx === 0) {
+        // The host ends a completed game for every connected player.
+        for (const sockId of room.sockets.keys()) {
+          io.to(sockId).emit('roomClosed', { code });
+        }
+        rooms.delete(code);
+        room.sockets.clear();
+        socket.leave(code);
+        currentRoom = null;
+        playerId = null;
+        broadcastRooms();
+        return cb && cb({ ok: true, closed: true });
+      }
       if (idx >= 0) {
         room.game.players[idx].connected = false;
         logAction(code, t.disconnected(playerName), 'leave');

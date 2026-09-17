@@ -347,6 +347,13 @@
   });
   client.on('chat', (c) => renderChat(c));
   client.on('rooms', (rooms) => renderAvailableRooms(rooms));
+  client.on('roomClosed', () => {
+    client.code = null;
+    client.state = null;
+    client.saveToStorage();
+    document.querySelector('#gameover-modal').hidden = true;
+    enterLobby();
+  });
   client.on('error', (m) => alert(m));
   client.connect();
 

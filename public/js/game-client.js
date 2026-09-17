@@ -147,6 +147,9 @@ class PestenClient {
     this.socket.on('rooms', (rooms) => {
       this.fire('rooms', rooms);
     });
+    this.socket.on('roomClosed', (info) => {
+      this.fire('roomClosed', info);
+    });
     this.socket.on('error-msg', (m) => {
       this.fire('error', m);
     });
