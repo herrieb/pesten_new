@@ -598,6 +598,7 @@ function renderRoom(state) {
 // ============================================================
 
 let lastDrawnCard = null;
+let afterTake = false;
 let pendingSuitFromPlay = false;
 let pendingSuitPlayerShown = null;
 
@@ -796,13 +797,20 @@ function renderActionBar(state) {
   const passDrawnBtn = $('#btn-pass-drawn');
   const skipAfterTakeBtn = $('#btn-skip-after-take');
   const hint = $('#action-hint');
+  const drawnPlayable = !!lastDrawnCard && canPlayClient(lastDrawnCard, state.discardTop, state.declaredSuit);
 
   drawBtn.hidden = !isMyTurn || pending || !!lastDrawnCard;
   takeBtn.hidden = !(isMyTurn && pending);
   skipBtn.hidden = true; // never show during play
-  playDrawnBtn.hidden = !(isMyTurn && lastDrawnCard);
+  playDrawnBtn.hidden = !(isMyTurn && lastDrawnCard && drawnPlayable);
   passDrawnBtn.hidden = !(isMyTurn && lastDrawnCard);
-  skipAfterTakeBtn.hidden = !(isMyTurn && !pending && !lastDrawnCard);
+  skipAfterTakeBtn.hidden = !(isMyTurn && afterTake && !pending && !lastDrawnCard);
+  drawBtn.disabled = !(isMyTurn && !pending && !lastDrawnCard);
+  takeBtn.disabled = !(isMyTurn && pending);
+  skipBtn.disabled = true;
+  playDrawnBtn.disabled = !(isMyTurn && lastDrawnCard && drawnPlayable);
+  passDrawnBtn.disabled = !(isMyTurn && lastDrawnCard);
+  skipAfterTakeBtn.disabled = !(isMyTurn && afterTake && !pending && !lastDrawnCard);
   if (pending) {
     takeBtn.textContent = `Pak ${state.pendingTake}`;
   }
@@ -878,6 +886,7 @@ function onCardClick(i) {
       openSuitModal();
     }
     lastDrawnCard = null;
+    afterTake = false;
   });
 }
 
@@ -997,6 +1006,7 @@ function onStockClick() {
       return;
     }
     lastDrawnCard = res.drawnCard;
+    afterTake = false;
     // Render will pick this up
     renderActionBar(client.state);
     if (res.playable && res.drawnCard) {
@@ -1012,6 +1022,7 @@ $('#btn-take').addEventListener('click', () => {
   showBanner({ r: '7', s: '♣' }, { text: 'Grabble Grabble!', sub: 'Kaarten pakken maar', tone: 'take2', duration: 1400 });
   client.take((res) => {
     if (res && res.ok) {
+      afterTake = true;
       // After taking, must declare suit if top is Joker
       if (client.state.discardTop?.r === 'JKR') {
         pendingSuitFromPlay = false;
@@ -1025,6 +1036,7 @@ $('#btn-take').addEventListener('click', () => {
 $('#btn-skip').addEventListener('click', () => {
   client.skip();
   lastDrawnCard = null;
+  afterTake = false;
 });
 
 $('#btn-skip-after-take').addEventListener('click', () => {
@@ -1040,6 +1052,7 @@ $('#btn-play-drawn').addEventListener('click', () => {
       return;
     }
     lastDrawnCard = null;
+    afterTake = false;
     if (res.requires === 'declareSuit' && (res.chooser === undefined || res.chooser === client.state.youIndex)) {
       pendingSuitFromPlay = true;
       openSuitModal();
