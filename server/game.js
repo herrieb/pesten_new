@@ -189,6 +189,52 @@ function canPlayCard(game, playerIndex, cardIndex) {
 }
 
 // Apply a card play. cardIndex must be validated by canPlayCard first.
+// Player chooses which 7-dump order to play (instead of automatic).
+// Returns the effect of the LAST dumped card (everything else in the middle is plain).
+function applyDump(game, playerIndex, sevenIndex, order) {
+  const p = game.players[playerIndex];
+  if (sevenIndex < 0 || sevenIndex >= p.hand.length) return { ok: false, reason: 'Kaartindex ongeldig' };
+  const sevenCard = p.hand[sevenIndex];
+  if (sevenCard.r !== '7') return { ok: false, reason: 'Eerste kaart moet een 7 zijn' };
+
+  const suit = sevenCard.s;
+  // order: array of hand indices to play. First must be the 7.
+  // Validate: every index must refer to a same-suit card, and last card must NOT be an effect card.
+  if (!Array.isArray(order) || order.length < 1) return { ok: false, reason: 'Geen volgorde' };
+  if (order[0] !== sevenIndex) return { ok: false, reason: 'De 7 moet als eerste worden gespeeld' };
+  const cards = [];
+  for (const idx of order) {
+    if (idx < 0 || idx >= p.hand.length) return { ok: false, reason: 'Index ongeldig in volgorde' };
+    const c = p.hand[idx];
+    if (c.s !== suit) return { ok: false, reason: `Kaart ${cardName(c)} is niet van ${suit}` };
+    cards.push(c);
+  }
+  // Last card effect-check: must NOT be an effect card (must be a number card)
+  const lastCard = cards[cards.length - 1];
+  if (['A','2','7','8','J','K','JKR'].includes(lastCard.r)) {
+    return { ok: false, reason: 'Laatste kaart moet een getal zijn (3-10)' };
+  }
+  // Remove the dumped cards from the hand in reverse order so indices stay valid
+  const sortedIdx = [...order].sort((a, b) => b - a);
+  for (const idx of sortedIdx) {
+    p.hand.splice(idx, 1);
+  }
+  // Push to discard in play order
+  for (const c of cards) game.discard.push(c);
+  game.lastActions.push({
+    msg: `${p.name} dumpt ${cards.length} ${suit} kaart${cards.length === 1 ? '' : 'en'} via 7${suit} (laatste: ${cardName(lastCard)})`,
+    kind: 'effect',
+  });
+  // Win check: if hand is now empty AND last card is a number, the player wins
+  if (p.hand.length === 0 && isNumber(lastCard)) {
+    game.winner = playerIndex;
+    game.phase = 'ended';
+    return { ok: true, requires: null, winner: true };
+  }
+  // The 7 effect: the next player must play same-suit OR same-rank as lastCard
+  return { ok: true, requires: null };
+}
+
 function applyPlay(game, playerIndex, cardIndex) {
   const p = game.players[playerIndex];
   const card = p.hand.splice(cardIndex, 1)[0];

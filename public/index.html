@@ -58,6 +58,21 @@
   </div>
 </div>
 
+<!-- ============= 7-DUMP ORDER MODAL ============= -->
+<div class="modal" id="seven-modal" hidden>
+  <div class="modal-card">
+    <button class="modal-close" id="close-seven">×</button>
+    <h2>Kies je 7-volgorde</h2>
+    <p class="muted">Sleep de kaarten om de volgorde te bepalen. De <b>laatste kaart</b> bepaalt het effect. Je laatste kaart moet een getal zijn (3-10) — effectkaarten (A, 2, 7, 8, J, K, Joker) kunnen niet als laatste.</p>
+    <div class="seven-cards" id="seven-cards"></div>
+    <p class="muted seven-hint" id="seven-hint"></p>
+    <div class="seven-actions">
+      <button class="btn ghost" id="btn-seven-cancel">Annuleren</button>
+      <button class="btn primary" id="btn-seven-confirm" disabled>Dumpen</button>
+    </div>
+  </div>
+</div>
+
 <!-- ============= AI NAME MODAL ============= -->
 <div class="modal" id="ai-name-modal" hidden>
   <div class="modal-card ai-modal">
@@ -147,20 +162,19 @@
       </div>
     </header>
 
-    <!-- Opponents row -->
-    <div class="opponents" id="opponents-row"></div>
-
-    <!-- Center: stock + discard -->
-    <div class="game-table-wrap">
-      <div class="table-center">
-        <div class="pile stock-pile" id="stock-pile" title="Voorraad">
-          <div class="card-back"></div>
-          <div class="pile-count" id="stock-count">—</div>
+    <!-- Center: stock + discard + chat (sidebar on desktop, separate row on mobile) -->
+    <div class="game-main">
+      <div class="game-table-wrap">
+        <div class="table-center">
+          <div class="pile stock-pile" id="stock-pile" title="Voorraad">
+            <div class="card-back"></div>
+            <div class="pile-count" id="stock-count">—</div>
+          </div>
+          <div class="pile discard-pile" id="discard-pile" title="Aflegstapel">
+            <!-- discard card is rendered here -->
+          </div>
+          <div class="last-three" id="last-three"></div>
         </div>
-        <div class="pile discard-pile" id="discard-pile" title="Aflegstapel">
-          <!-- discard card is rendered here -->
-        </div>
-        <div class="last-three" id="last-three"></div>
       </div>
 
       <!-- Game chat -->
@@ -179,8 +193,19 @@
       </aside>
     </div>
 
-    <!-- Action log -->
-    <div class="action-log" id="action-log"></div>
+    <!-- Opponents row -->
+    <div class="opponents" id="opponents-row"></div>
+
+    <!-- Action buttons -->
+    <p class="action-hint" id="action-hint" hidden></p>
+    <div class="action-bar" id="action-bar">
+      <button class="btn ghost" id="btn-draw">Pakken</button>
+      <button class="btn ghost" id="btn-take" hidden>Pak</button>
+      <button class="btn ghost" id="btn-skip" hidden>Passen</button>
+      <button class="btn ghost" id="btn-play-drawn" hidden>Speel getrokken</button>
+      <button class="btn ghost" id="btn-pass-drawn" hidden>Bewaren</button>
+      <button class="btn ghost" id="btn-skip-after-take" hidden>Passen</button>
+    </div>
 
     <!-- Your hand -->
     <div class="your-hand-wrap">
@@ -191,26 +216,31 @@
       <div class="your-hand" id="your-hand"></div>
     </div>
 
-    <!-- Action buttons -->
-    <div class="action-bar" id="action-bar">
-      <button class="btn ghost" id="btn-draw">Pakken</button>
-      <button class="btn ghost" id="btn-take" hidden>Pak</button>
-      <button class="btn ghost" id="btn-skip" hidden>Passen</button>
-      <button class="btn ghost" id="btn-play-drawn" hidden>Speel getrokken</button>
-      <button class="btn ghost" id="btn-pass-drawn" hidden>Bewaren</button>
-      <button class="btn ghost" id="btn-skip-after-take" hidden>Passen</button>
-    </div>
+    <!-- Action log -->
+    <div class="action-log" id="action-log"></div>
 
     <!-- Suit chooser modal -->
     <div class="modal" id="suit-modal" hidden>
       <div class="modal-card">
         <h2>Kies de volgende kleur</h2>
-        <p class="muted">Je hebt net een J of Joker gespeeld.</p>
-        <div class="suit-picker">
-          <button class="suit-btn suit-red" data-suit="♦">♦</button>
-          <button class="suit-btn suit-black" data-suit="♣">♣</button>
-          <button class="suit-btn suit-red" data-suit="♥">♥</button>
-          <button class="suit-btn suit-black" data-suit="♠">♠</button>
+        <p class="muted">Je hebt net een J of Joker gespeeld. Kies de kleur waar je de meeste kaarten van hebt.</p>
+        <div class="suit-picker" id="suit-picker">
+          <button class="suit-btn suit-red" data-suit="♦">
+            <span class="suit-glyph">♦</span>
+            <span class="suit-count" data-suit="♦">0</span>
+          </button>
+          <button class="suit-btn suit-black" data-suit="♣">
+            <span class="suit-glyph">♣</span>
+            <span class="suit-count" data-suit="♣">0</span>
+          </button>
+          <button class="suit-btn suit-red" data-suit="♥">
+            <span class="suit-glyph">♥</span>
+            <span class="suit-count" data-suit="♥">0</span>
+          </button>
+          <button class="suit-btn suit-black" data-suit="♠">
+            <span class="suit-glyph">♠</span>
+            <span class="suit-count" data-suit="♠">0</span>
+          </button>
         </div>
       </div>
     </div>

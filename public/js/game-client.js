@@ -119,6 +119,7 @@ class PestenClient {
   join(code, name, ack) { this.emit('join', { code, name }, ack); }
   start(ack) { this.emit('start', {}, ack); }
   play(idx, ack) { this.emit('play', { cardIndex: idx }, ack); }
+  playDump(order, ack) { this.emit('playDump', { order }, ack); }
   declareSuit(suit) { this.emit('declareSuit', { suit }); }
   take(ack) { this.emit('take', {}, ack); }
   draw(ack) { this.emit('draw', {}, ack); }

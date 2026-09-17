@@ -578,21 +578,59 @@ function renderActionBar(state) {
   const playDrawnBtn = $('#btn-play-drawn');
   const passDrawnBtn = $('#btn-pass-drawn');
   const skipAfterTakeBtn = $('#btn-skip-after-take');
+  const hint = $('#action-hint');
 
-  // When there's a pending stack: show take / skip (the chain choice)
-  // When no pending and not from draw: also show a skip/pass option (for post-take flow)
-  // draw is visible whenever it's your turn and there's no pending stack AND you don't have a drawn card to play/pass.
-  // After taking a stack, draw is allowed (it just draws one card, then turn continues normally).
   drawBtn.hidden = !isMyTurn || pending || !!lastDrawnCard;
-  // During a pending stack, only "Pak" (take) is allowed - NO skipping past a stack
   takeBtn.hidden = !(isMyTurn && pending);
   skipBtn.hidden = true; // never show during play
   playDrawnBtn.hidden = !(isMyTurn && lastDrawnCard);
   passDrawnBtn.hidden = !(isMyTurn && lastDrawnCard);
-  // skip-after-take: visible when it's your turn and you just took (no pending, no drawn card to play/pass)
   skipAfterTakeBtn.hidden = !(isMyTurn && !pending && !lastDrawnCard);
   if (pending) {
     takeBtn.textContent = `Pak ${state.pendingTake}`;
+  }
+
+  // Action hint text
+  if (!isMyTurn) {
+    hint.hidden = true;
+    hint.innerHTML = '';
+    return;
+  }
+  // Count playable cards in hand
+  const hand = state.players[state.youIndex]?.hand || [];
+  let playableCount = 0;
+  for (const c of hand) {
+    if (pending) {
+      if (c.r === '2' || c.r === 'JKR') playableCount++;
+    } else {
+      if (canPlayClient(c, state.discardTop, state.declaredSuit)) playableCount++;
+    }
+  }
+  if (pending) {
+    hint.hidden = false;
+    if (playableCount > 0) {
+      hint.innerHTML = `Je hebt <span class="you-have">${playableCount}</span> stapelbare kaart${playableCount === 1 ? '' : 'en'} (2 of Joker). Speel er een of pak de straf.`;
+    } else {
+      hint.innerHTML = `Geen stapelbare kaarten. Je moet <span class="you-have">${state.pendingTake}</span> kaarten pakken.`;
+    }
+  } else if (lastDrawnCard) {
+    hint.hidden = false;
+    hint.innerHTML = `Je hebt net <span class="you-have">${lastDrawnCard.r}${lastDrawnCard.s}</span> getrokken. Speel 'm of bewaar 'm.`;
+  } else {
+    // Post-take or normal play
+    const drawn = lastDrawnCard;
+    if (drawn) {
+      hint.hidden = true;
+    } else if (skipAfterTakeBtn && !skipAfterTakeBtn.hidden) {
+      hint.hidden = false;
+      hint.innerHTML = `Je hebt net de straf gepakt. <span class="you-have">Speel een kaart, pak 1 extra, of pas.</span>`;
+    } else if (playableCount > 0) {
+      hint.hidden = false;
+      hint.innerHTML = `Je hebt <span class="you-have">${playableCount}</span> speelbare kaart${playableCount === 1 ? '' : 'en'}. Klik er één om te spelen, of pak een kaart.`;
+    } else {
+      hint.hidden = false;
+      hint.innerHTML = `Geen speelbare kaart. <span class="you-have">Pak een kaart van de voorraad.</span>`;
+    }
   }
 }
 
@@ -600,6 +638,19 @@ function onCardClick(i) {
   if (!client.state) return;
   const st = client.state;
   if (st.youIndex !== st.turn) return;
+  const card = st.players[st.youIndex].hand[i];
+  // 7-dump: intercept and let player pick the order
+  if (card && card.r === '7') {
+    const suit = card.s;
+    const sameSuit = st.players[st.youIndex].hand
+      .map((c, idx) => ({ c, idx }))
+      .filter(o => o.c.s === suit);
+    if (sameSuit.length >= 2) {
+      openSevenModal(sameSuit.map(o => o.idx), suit);
+      return;
+    }
+    // Only the 7 itself, just play normally
+  }
   client.play(i, (res) => {
     if (!res || !res.ok) {
       alert(res?.error || 'Kan deze kaart niet spelen');
@@ -612,6 +663,118 @@ function onCardClick(i) {
     lastDrawnCard = null;
   });
 }
+
+// 7-dump modal logic
+let sevenCards = []; // array of hand indices in play order
+let sevenCardObjects = []; // the actual card objects
+let sevenSuit = '';
+let sevenCardIndex = -1; // index of the 7 itself in the hand
+
+function openSevenModal(handIndices, suit) {
+  sevenSuit = suit;
+  sevenCardIndex = handIndices[0]; // first card we found; we'll find the 7 below
+  // Find which one is the 7
+  const hand = client.state.players[client.state.youIndex].hand;
+  const sevenIdx = hand.findIndex(c => c.r === '7');
+  sevenCardIndex = sevenIdx >= 0 ? sevenIdx : handIndices[0];
+  // Build the cards in default order: 7 first, then others
+  sevenCardObjects = handIndices.map(idx => ({ ...hand[idx], _handIdx: idx }));
+  sevenCards = [...sevenCardObjects];
+  // Put the 7 first by default
+  const sevenObjIdx = sevenCards.findIndex(c => c.r === '7');
+  if (sevenObjIdx > 0) {
+    const [s] = sevenCards.splice(sevenObjIdx, 1);
+    sevenCards.unshift(s);
+  }
+  renderSevenCards();
+  $('#seven-modal').hidden = false;
+}
+
+function closeSevenModal() {
+  $('#seven-modal').hidden = true;
+}
+
+function renderSevenCards() {
+  const wrap = $('#seven-cards');
+  wrap.innerHTML = '';
+  const hint = $('#seven-hint');
+  sevenCards.forEach((card, pos) => {
+    const el = renderCard(card, { size: 'sm' });
+    el.classList.add('seven-card');
+    el.draggable = true;
+    el.dataset.pos = pos;
+    if (pos === sevenCards.length - 1) {
+      // Last card - highlight and tag
+      el.classList.add('last-card');
+      const tag = document.createElement('div');
+      tag.className = 'last-tag';
+      tag.textContent = isEffect(card) ? 'LAATSTE (effect)' : 'LAATSTE';
+      el.appendChild(tag);
+      if (isEffect(card)) {
+        el.classList.add('invalid');
+        hint.textContent = '✗ Laatste kaart moet een getal zijn (3-10). Sleep een andere kaart naar achter.';
+        hint.className = 'seven-hint invalid';
+        $('#btn-seven-confirm').disabled = true;
+      } else {
+        hint.textContent = `✓ Je laatste kaart is ${cardName(card)} — alleen het effect hiervan telt.`;
+        hint.className = 'seven-hint valid';
+        $('#btn-seven-confirm').disabled = false;
+      }
+    }
+    // Drag handlers
+    el.addEventListener('dragstart', (ev) => {
+      ev.dataTransfer.setData('text/plain', String(pos));
+      el.classList.add('dragging');
+    });
+    el.addEventListener('dragend', () => {
+      el.classList.remove('dragging');
+    });
+    el.addEventListener('dragover', (ev) => {
+      ev.preventDefault();
+    });
+    el.addEventListener('drop', (ev) => {
+      ev.preventDefault();
+      const fromPos = parseInt(ev.dataTransfer.getData('text/plain'), 10);
+      const toPos = parseInt(el.dataset.pos, 10);
+      if (Number.isNaN(fromPos) || Number.isNaN(toPos) || fromPos === toPos) return;
+      const [moved] = sevenCards.splice(fromPos, 1);
+      sevenCards.splice(toPos, 0, moved);
+      renderSevenCards();
+    });
+    wrap.appendChild(el);
+  });
+}
+
+function isEffect(card) {
+  if (!card) return true;
+  return ['A','2','7','8','J','K','JKR'].includes(card.r);
+}
+
+function cardName(card) {
+  return card ? `${card.r}${card.s}` : '?';
+}
+
+$('#btn-seven-confirm').addEventListener('click', () => {
+  // Build the play order. The 7 must be first (it's the actual play).
+  // Then the rest in order. The last card stays as is.
+  const order = sevenCards.map(c => c._handIdx);
+  // Send the 7-dump order to the server
+  client.playDump(order, (res) => {
+    if (res && res.ok) {
+      closeSevenModal();
+      lastDrawnCard = null;
+      if (res.requires === 'declareSuit') {
+        pendingSuitFromPlay = true;
+        openSuitModal();
+      }
+    } else {
+      alert(res?.error || 'Dump mislukt');
+    }
+  });
+});
+
+$('#btn-seven-cancel').addEventListener('click', closeSevenModal);
+$('#close-seven').addEventListener('click', closeSevenModal);
 
 function onStockClick() {
   if (!client.state) return;
@@ -684,28 +847,47 @@ if (chatToggle && chatPanel) {
   chatToggle.addEventListener('click', () => {
     chatPanel.classList.toggle('collapsed');
   });
-  // On phones only, start collapsed to save space
-  if (window.matchMedia('(max-width: 500px)').matches) {
-    chatPanel.classList.add('collapsed');
-  } else {
-    chatPanel.classList.remove('collapsed');
-  }
-  // Re-check on resize
-  window.addEventListener('resize', () => {
-    if (window.matchMedia('(max-width: 500px)').matches) {
-      chatPanel.classList.add('collapsed');
-    } else {
-      chatPanel.classList.remove('collapsed');
-    }
-  });
+  // Always start open. The user can collapse with the toggle button.
+  chatPanel.classList.remove('collapsed');
+  // Re-check on resize - keep state as-is, no auto-collapse
 }
 
 function openSuitModal() {
+  // Show how many cards of each suit the player has in their hand
+  const hand = client.state?.players?.[client.state.youIndex]?.hand || [];
+  const counts = { '♦': 0, '♣': 0, '♥': 0, '♠': 0 };
+  for (const c of hand) {
+    if (counts[c.s] !== undefined) counts[c.s]++;
+  }
+  // Update the badges
+  $$('.suit-btn .suit-count').forEach(el => {
+    const suit = el.dataset.suit;
+    const n = counts[suit] || 0;
+    el.textContent = `${n} kaart${n === 1 ? '' : 'en'}`;
+  });
+  // Mark zero-suit buttons as 'zero' class
+  $$('.suit-btn').forEach(btn => {
+    const suit = btn.dataset.suit;
+    btn.classList.toggle('zero', (counts[suit] || 0) === 0);
+    btn.classList.remove('recommended');
+  });
+  // Highlight the highest-count suit as 'recommended' (if at least 1)
+  let best = null, bestN = -1;
+  for (const [s, n] of Object.entries(counts)) {
+    if (n > bestN) { bestN = n; best = s; }
+  }
+  if (best && bestN > 0) {
+    const btn = document.querySelector(`.suit-btn[data-suit="${best}"]`);
+    if (btn) btn.classList.add('recommended');
+  }
   $('#suit-modal').hidden = false;
 }
 function closeSuitModal() {
   $('#suit-modal').hidden = true;
   pendingSuitFromPlay = false;
+  $$('.suit-btn').forEach(btn => {
+    btn.classList.remove('recommended', 'zero');
+  });
 }
 $$('.suit-btn').forEach(btn => {
   btn.addEventListener('click', () => {
