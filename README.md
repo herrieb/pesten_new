@@ -5,7 +5,8 @@ A real-time multiplayer implementation of Pesten (Dutch UNO-like) with:
 - Real playing cards with face/pip/ace/joker designs (CSS-only)
 - Online multiplayer via Socket.io
 - AI opponent powered by Ollama cloud (MiniMax M3)
-- Lobby system, room codes, chat, custom rules
+- Lobby system, room codes, live available-room updates, chat, custom rules
+- Host-controlled room closing and automatic cleanup when no human players remain
 
 ## Setup
 
@@ -52,6 +53,36 @@ See `IDEA.md` for the full Pesten ruleset.
 - Drawn card may be played or passed
 - Taking from a stack: play, draw, or skip
 - Winner must play a number card last
+- A 7 starts a rits/dump: selected cards of the 7's suit may be played in order, cards may be omitted, and any card (including an effect/pest card) may be selected last; the last card's effect/value applies
+- The 7 must always be the first card in the dump
+
+## Room lifecycle
+
+- The player who creates a room is its host and can close it from the waiting room.
+- Closing a waiting room immediately removes it for all connected players and from the available-room list.
+- **Back to lobby** removes the current player from the game. A room is automatically deleted when no connected human players remain.
+- Available rooms are broadcast live to lobby clients when rooms are created, joined, started, closed, or left.
+
+## Translations
+
+Dutch is the source language and is maintained in separate catalogs per audited source file:
+
+- `public/locales/nl/index.json` — static HTML, labels, buttons, modals, rules, and placeholders
+- `public/locales/nl/ui.json` — UI status text, action hints, banners, errors, and AI display text
+- `public/locales/nl/game-client.json` — card and avatar labels
+- `server/locales/nl/messages.json` — server game messages and errors
+- `server/locales/nl/profiles.json` — AI names, taglines, and chat instructions
+- `public/locales/nl/manifest.json` — source-file mapping
+
+English and Turkish catalogs must keep the same keys when they are added. Missing translations fall back to the source-language text.
+
+## Tests
+
+```bash
+npm test
+```
+
+The test suite covers game rules, opening-card effects, 7-dumps, Joker suit selection, and Dutch locale catalog validity.
 
 ## File layout
 
