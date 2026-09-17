@@ -79,6 +79,7 @@ function createGame(numPlayers = 2) {
     extraTurn: 0,
     pendingTake: 0,
     declaredSuit: null,
+    pendingSuitPlayer: null,
     winner: null,
     lastActions: [],
     phase: 'waiting',
@@ -163,6 +164,7 @@ function publicState(game, viewerId) {
     extraTurn: game.extraTurn,
     pendingTake: game.pendingTake,
     declaredSuit: game.declaredSuit,
+    pendingSuitPlayer: game.pendingSuitPlayer,
     winner: game.winner,
     phase: game.phase,
     deckCount: game.deck.length,
@@ -204,6 +206,9 @@ function applyDump(game, playerIndex, sevenIndex, order) {
   // Validate: every index must refer to a same-suit card, and last card must NOT be an effect card.
   if (!Array.isArray(order) || order.length < 1) return { ok: false, reason: 'Geen volgorde' };
   if (order[0] !== sevenIndex) return { ok: false, reason: 'De 7 moet als eerste worden gespeeld' };
+  if (new Set(order).size !== order.length) return { ok: false, reason: 'Een kaart mag maar één keer voorkomen' };
+  const expectedCount = p.hand.filter(c => c.s === suit).length;
+  if (order.length !== expectedCount) return { ok: false, reason: 'Je moet alle kaarten van deze kleur dumpen' };
   const cards = [];
   for (const idx of order) {
     if (idx < 0 || idx >= p.hand.length) return { ok: false, reason: 'Index ongeldig in volgorde' };
@@ -370,5 +375,5 @@ module.exports = {
   publicState,
   canPlayCard, applyPlay, declareSuit,
   applyTake, applyDraw, applySkip,
-  advanceTurn,
+  advanceTurn, applyDump,
 };

@@ -254,6 +254,28 @@ io.on('connection', (socket) => {
     broadcast(currentRoom);
   });
 
+  socket.on('playDump', ({ order }, ack) => {
+    const cb = typeof ack === 'function' ? ack : null;
+    if (!currentRoom) return cb && cb({ ok: false, error: 'Geen kamer' });
+    const room = getRoom(currentRoom);
+    const idx = findPlayerIndex(room, playerId);
+    if (idx < 0 || room.game.phase !== 'playing' || room.game.turn !== idx) {
+      return cb && cb({ ok: false, error: t.notYourTurn });
+    }
+    if (!Array.isArray(order) || order.length < 1) {
+      return cb && cb({ ok: false, error: 'Geen geldige 7-volgorde' });
+    }
+    const sevenIndex = order[0];
+    const check = game.canPlayCard(room.game, idx, sevenIndex);
+    if (!check.ok) return cb && cb(check);
+    const result = game.applyDump(room.game, idx, sevenIndex, order);
+    if (!result.ok) return cb && cb(result);
+    logAction(currentRoom, t.dumped(playerName, order.length, room.game.discard[room.game.discard.length - order.length].s), 'effect');
+    if (room.game.winner === null || room.game.winner === undefined) game.advanceTurn(room.game);
+    cb && cb({ ok: true });
+    broadcast(currentRoom);
+  });
+
   socket.on('declareSuit', ({ suit }) => {
     if (!currentRoom) return;
     const room = getRoom(currentRoom);
