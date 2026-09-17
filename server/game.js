@@ -82,6 +82,7 @@ function createGame(numPlayers = 2) {
     declaredSuit: null,
     winner: null,
     lastActions: [],
+    events: [],
     phase: 'waiting',
     decksUsed: decksForPlayers(numPlayers),
   };

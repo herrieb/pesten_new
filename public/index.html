@@ -318,6 +318,16 @@
         <button class="btn primary" id="btn-back-lobby">Terug naar lobby</button>
       </div>
     </div>
+
+    <!-- Achievement modal (refill events, etc.) -->
+    <div class="modal" id="achievement-modal" hidden>
+      <div class="modal-card center achievement-card">
+        <div class="achievement-badge">TROFEE</div>
+        <h2>Achievement unlocked!</h2>
+        <p class="achievement-msg" id="achievement-msg">...</p>
+        <button class="btn primary" id="btn-achievement-ok">Verder</button>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -339,6 +349,22 @@
   });
   client.on('chat', (c) => renderChat(c));
   client.on('error', (m) => alert(m));
+  client.on('achievement', (ev) => {
+    if (!ev) return;
+    if (ev.kind === 'refill') {
+      const total = ev.totalDecks || (ev.decksUsed || 2);
+      const msg = 'De voorraad was leeg. Er is een nieuwe kaartstapel toegevoegd! (Totaal: ' + total + ' decks)';
+      const modal = $('#achievement-modal');
+      $('#achievement-msg').textContent = msg;
+      modal.hidden = false;
+    }
+  });
+  // Achievement modal dismiss
+  document.addEventListener('click', (e) => {
+    if (e.target && e.target.id === 'btn-achievement-ok') {
+      $('#achievement-modal').hidden = true;
+    }
+  });
 
   document.addEventListener('DOMContentLoaded', () => {
     bindAuthScreen();

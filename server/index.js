@@ -32,6 +32,14 @@ function getRoom(code) {
 
 function broadcast(code) {
   const room = getRoom(code);
+  // Emit any pending achievements first (refill events, etc.) then clear.
+  const events = room.game.events || [];
+  if (events.length > 0) {
+    for (const ev of events) {
+      io.to(code).emit('achievement', ev);
+    }
+    room.game.events = [];
+  }
   for (const [sockId, info] of room.sockets) {
     const ps = game.publicState(room.game, info.playerId);
     io.to(sockId).emit('state', ps);

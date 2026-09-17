@@ -1691,3 +1691,26 @@ html, body {
   object-fit: cover;
 }
 .player-avatar { width: 40px; height: 40px; flex-basis: 40px; }
+
+/* Achievement modal */
+.achievement-card {
+  text-align: center;
+  background: linear-gradient(135deg, var(--bg-card) 0%, rgba(255, 200, 80, 0.08) 100%);
+  border: 1px solid rgba(255, 200, 80, 0.3);
+}
+.achievement-badge {
+  font-size: 56px;
+  margin-bottom: 8px;
+  filter: drop-shadow(0 0 12px rgba(255, 200, 80, 0.5));
+  animation: achievement-pop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 1;
+}
+@keyframes achievement-pop {
+  0% { transform: scale(0); opacity: 0; }
+  60% { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(1); }
+}
+.achievement-msg {
+  font-size: 14px;
+  color: var(--fg-muted);
+  margin: 8px 0 16px;
+}
