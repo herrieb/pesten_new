@@ -169,6 +169,7 @@ class PestenClient {
   chat(msg) { this.emit('chat', { msg }); }
   addAi(name, profileKey, ack) { this.emit('addAi', { name, profileKey }, ack); }
   removeAi(id, ack) { this.emit('removeAi', { aiId: id }, ack); }
+  leaveRoom(ack) { this.emit('leaveRoom', {}, ack); }
 }
 
 function avatarUrl(file) {

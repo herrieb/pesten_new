@@ -467,8 +467,8 @@ io.on('connection', (socket) => {
     broadcast(currentRoom);
   });
 
-  socket.on('leaveRoom', (ack) => {
-    const cb = typeof ack === 'function' ? ack : null;
+  socket.on('leaveRoom', (payload, ack) => {
+    const cb = typeof ack === 'function' ? ack : (typeof payload === 'function' ? payload : null);
     if (!currentRoom) return cb && cb({ ok: true });
     const code = currentRoom;
     const room = rooms.get(code);
