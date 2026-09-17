@@ -110,5 +110,6 @@
   "error.cannot_play_drawn": "Kan getrokken kaart niet spelen",
   "error.room_close_failed": "Kamer sluiten mislukt",
   "error.logout_confirm": "Uitloggen? Je verliest je sessie maar je account blijft bestaan.",
-  "error.room_closed": "De kamer is gesloten."
+  "error.room_closed": "De kamer is gesloten.",
+  "game.seven_order": "Sleep de kaarten om de volgorde te bepalen. De rits begint altijd met de 7. Je mag kaarten van die kleur overslaan; de laatste kaart mag elke kaart zijn, ook een pestkaart. De waarde/het effect van de laatste kaart telt."
 }

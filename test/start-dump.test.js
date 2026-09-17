@@ -37,3 +37,16 @@ test('7-dump allows an effect card last and applies its value', () => {
   assert.equal(result.ok, true);
   assert.equal(g.pendingTake, 2);
 });
+
+
+test('7-dump allows a partial dump with any final card', () => {
+  const g = game.createGame(2);
+  game.addPlayer(g, 'p1', 'One', 'p1.svg');
+  game.addPlayer(g, 'p2', 'Two', 'p2.svg');
+  g.players[0].hand = [{ r: '7', s: '♥' }, { r: '3', s: '♥' }, { r: '2', s: '♥' }, { r: '8', s: '♣' }];
+  g.discard = [{ r: '4', s: '♣' }];
+  const result = game.applyDump(g, 0, 0, [0, 3]);
+  assert.equal(result.ok, true);
+  assert.equal(g.skipNext, 1);
+  assert.equal(g.players[0].hand.length, 2);
+});

@@ -903,9 +903,23 @@ let sevenCards = []; // array of hand indices in play order
 let sevenCardObjects = []; // the actual card objects
 let sevenSuit = '';
 let sevenCardIndex = -1; // index of the 7 itself in the hand
+let sevenOptionalLastIndices = [];
 
 function openSevenModal(handIndices, suit) {
   sevenSuit = suit;
+  sevenOptionalLastIndices = client.state.players[client.state.youIndex].hand
+    .map((c, idx) => handIndices.includes(idx) ? -1 : idx).filter(idx => idx >= 0);
+  const lastSelect = $('#seven-last-card');
+  if (lastSelect) {
+    lastSelect.innerHTML = '<option value="">Geen extra kaart</option>';
+    sevenOptionalLastIndices.forEach(idx => {
+      const option = document.createElement('option');
+      const card = client.state.players[client.state.youIndex].hand[idx];
+      option.value = String(idx);
+      option.textContent = `${cardName(card)} als laatste`;
+      lastSelect.appendChild(option);
+    });
+  }
   sevenCardIndex = handIndices[0]; // first card we found; we'll find the 7 below
   // Find which one is the 7
   const hand = client.state.players[client.state.youIndex].hand;
@@ -969,6 +983,19 @@ function renderSevenCards() {
       sevenCards.splice(toPos, 0, moved);
       renderSevenCards();
     });
+    if (pos > 0) {
+      const remove = document.createElement('button');
+      remove.type = 'button';
+      remove.className = 'seven-remove';
+      remove.textContent = '×';
+      remove.title = 'Kaart weglaten';
+      remove.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        sevenCards.splice(pos, 1);
+        renderSevenCards();
+      });
+      el.appendChild(remove);
+    }
     wrap.appendChild(el);
   });
 }
@@ -986,6 +1013,8 @@ $('#btn-seven-confirm').addEventListener('click', () => {
   // Build the play order. The 7 must be first (it's the actual play).
   // Then the rest in order. The last card stays as is.
   const order = sevenCards.map(c => c._handIdx);
+  const optionalLastValue = $('#seven-last-card')?.value || '';
+  if (optionalLastValue !== '') order.push(Number(optionalLastValue));
   // Send the 7-dump order to the server
   client.playDump(order, (res) => {
     if (res && res.ok) {

@@ -232,13 +232,15 @@ function applyDump(game, playerIndex, sevenIndex, order) {
   if (!Array.isArray(order) || order.length < 1) return { ok: false, reason: 'Geen volgorde' };
   if (order[0] !== sevenIndex) return { ok: false, reason: 'De 7 moet als eerste worden gespeeld' };
   if (new Set(order).size !== order.length) return { ok: false, reason: 'Een kaart mag maar één keer voorkomen' };
-  const expectedCount = p.hand.filter(c => c.s === suit).length;
-  if (order.length !== expectedCount) return { ok: false, reason: 'Je moet alle kaarten van deze kleur dumpen' };
   const cards = [];
-  for (const idx of order) {
+  for (let position = 0; position < order.length; position++) {
+    const idx = order[position];
     if (idx < 0 || idx >= p.hand.length) return { ok: false, reason: 'Index ongeldig in volgorde' };
     const c = p.hand[idx];
-    if (c.s !== suit) return { ok: false, reason: `Kaart ${cardName(c)} is niet van ${suit}` };
+    // Every card before the last must match the 7's suit. The last card may be any card.
+    if (position < order.length - 1 && c.s !== suit) {
+      return { ok: false, reason: `Kaart ${cardName(c)} is niet van ${suit}` };
+    }
     cards.push(c);
   }
   const lastCard = cards[cards.length - 1];

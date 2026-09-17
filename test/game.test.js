@@ -17,13 +17,13 @@ test('7-dump accepts every card of the suit in the requested order', () => {
   assert.equal(g.winner, 0);
 });
 
-test('7-dump rejects duplicate or incomplete card orders', () => {
+test('7-dump rejects duplicate orders and allows omitted cards', () => {
   const g = game.createGame(2);
   game.addPlayer(g, 'p1', 'One', 'p1.svg');
   game.addPlayer(g, 'p2', 'Two', 'p2.svg');
   g.players[0].hand = [card('7'), card('3'), card('9')];
   assert.equal(game.applyDump(g, 0, 0, [0, 0, 1]).ok, false);
-  assert.equal(game.applyDump(g, 0, 0, [0, 1]).ok, false);
+  assert.equal(game.applyDump(g, 0, 0, [0, 1]).ok, true);
 });
 
 test('public state exposes the player who must choose a Joker suit', () => {
