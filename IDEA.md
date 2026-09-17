@@ -46,11 +46,11 @@ A Dutch card game similar to UNO, played with a standard 52-card deck plus 2 jok
 
 ## 7-rule (suit dump)
 
-- Playing a **7** lets you discard **all your cards of that same suit** in one turn.
+- Playing a **7** lets you discard any selected cards of that same suit in one turn; you may leave other cards in your hand.
 - You choose the **order** in which they go on the pile.
 - **Only the LAST card's effect counts.** Everything else on top is treated as a plain number/rank for effect purposes (a 2 in the middle does not add to a stack, a K in the middle does not give an extra turn, etc.).
   - Example: hand = `7♥, 3♥, 5♥, K♥, 9♥`. Play them in that order. Result: suit dumped, next player must play a heart or a 9. No extra turn, no extra draw.
-- The **7 must always be first** in the rits. Any card may be last, including an effect card; the value/effect of that last card applies normally.
+- The **7 must always be first** in the rits. The last selected card may be any card, including an effect card; the value/effect of that last card applies normally.
 - After dumping, your turn ends (no draw).
 
 ## Ace with 2 players
