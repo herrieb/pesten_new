@@ -336,9 +336,10 @@
   // Boot: connect socket, render auth screen, attempt auto-rejoin if a stored session exists.
   const client = new PestenClient();
   window.client = client;
-  client.connect();
-
   // Persistent UI listeners
+  client.on('connected', () => {
+    client.listRooms((res) => renderAvailableRooms(res?.rooms || []));
+  });
   client.on('state', (s) => {
     renderGame(s);
     maybeShowGameOver(s);
@@ -347,6 +348,7 @@
   client.on('chat', (c) => renderChat(c));
   client.on('rooms', (rooms) => renderAvailableRooms(rooms));
   client.on('error', (m) => alert(m));
+  client.connect();
 
   document.addEventListener('DOMContentLoaded', () => {
     bindAuthScreen();

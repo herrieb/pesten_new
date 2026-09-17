@@ -134,6 +134,9 @@ class PestenClient {
   }
   connect() {
     this.socket = io();
+    this.socket.on('connect', () => {
+      this.fire('connected');
+    });
     this.socket.on('state', (s) => {
       this.state = s;
       this.fire('state', s);
