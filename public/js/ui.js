@@ -150,7 +150,6 @@ function maybeShowEffectBanner(newState) {
 
 
 
-const client = new PestenClient();
 
 function $(s, r = document) { return r.querySelector(s); }
 function $$(s, r = document) { return Array.from(r.querySelectorAll(s)); }
@@ -176,6 +175,7 @@ function fmtTime(ts) {
 const AVATAR_COUNT = 20;
 let guestSelectedAvatar = null;
 let registerSelectedAvatar = null;
+let authScreenBound = false;
 
 function renderAvatarGrid(container, onSelect) {
   container.innerHTML = '';
@@ -204,6 +204,8 @@ function updateAuthButtons() {
 }
 
 function bindAuthScreen() {
+  if (authScreenBound) return;
+  authScreenBound = true;
   // Tab switching
   $$('.auth-tab').forEach(tab => {
     tab.addEventListener('click', () => {
@@ -295,6 +297,9 @@ function bindAuthScreen() {
     });
   });
 }
+
+// Bind immediately; ui.js is loaded at the end of the document.
+bindAuthScreen();
 
 function enterLobby() {
   // Populate lobby identity
