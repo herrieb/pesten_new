@@ -41,7 +41,7 @@ A Dutch card game similar to UNO, played with a standard 52-card deck plus 2 jok
   - Exception: **7** ends the chain on the current player *and* dumps their matching suit; they take the +N cards first, then dump.
 - **The player who must take cards has to acknowledge before they're dealt** (to avoid info leakage from timing).
 - **After taking the cards**, the player chooses one of: **play a card**, **draw 1 card**, or **skip** (end turn).
-  - If the take was triggered by a Joker, the player who took **declares the next suit** regardless of which option they pick.
+  - After a Joker is played, the next player **immediately declares the next suit** before stacking or taking.
 - Example: P1 plays 2 (+2) → P2 plays Joker (+5, total 7) → P3 plays 2 (+2, total 9) → P4 plays Joker (+5, total 14) → P5 takes 14, then plays/draws/skips, and P6 plays next.
 
 ## 7-rule (suit dump)

@@ -572,6 +572,7 @@ function renderRoom(state) {
 
 let lastDrawnCard = null;
 let pendingSuitFromPlay = false;
+let pendingSuitPlayerShown = null;
 
 function showGame() {
   showScreen('#screen-game');
@@ -586,6 +587,12 @@ function renderGame(state) {
     return;
   }
   showGame();
+  if (state.pendingSuitPlayer === state.youIndex && pendingSuitPlayerShown !== state.pendingSuitPlayer) {
+    pendingSuitPlayerShown = state.pendingSuitPlayer;
+    openSuitModal();
+  } else if (state.pendingSuitPlayer !== state.youIndex) {
+    pendingSuitPlayerShown = null;
+  }
   renderOpponents(state);
   renderTable(state);
   renderActionLog(state);

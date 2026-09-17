@@ -118,6 +118,7 @@ function startGame(game) {
   game.extraTurn = 0;
   game.pendingTake = 0;
   game.declaredSuit = null;
+  game.pendingSuitPlayer = null;
   game.winner = null;
   game.lastActions.push({ msg: `Spel gestart met ${game.players.length} speler${game.players.length === 1 ? '' : 's'}, ${game.decksUsed} deck${game.decksUsed === 1 ? '' : 's'}`, kind: 'sys' });
 }
@@ -311,6 +312,7 @@ function applyPlay(game, playerIndex, cardIndex) {
 // Declare the suit (for J or Joker-after-take).
 function declareSuit(game, playerIndex, suitChar) {
   game.declaredSuit = suitChar;
+  game.pendingSuitPlayer = null;
   game.lastActions.push({ msg: `${game.players[playerIndex].name} koos ${suitChar}`, kind: 'effect' });
 }
 

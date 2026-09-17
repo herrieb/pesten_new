@@ -246,7 +246,10 @@ io.on('connection', (socket) => {
     const result = game.applyPlay(room.game, idx, cardIndex);
     logAction(currentRoom, t.playedCard(playerName, card), 'play');
     if (room.game.winner === null || room.game.winner === undefined) {
-      if (!result.requires) {
+      if (card.r === 'JKR') {
+        game.advanceTurn(room.game);
+        room.game.pendingSuitPlayer = room.game.turn;
+      } else if (!result.requires) {
         game.advanceTurn(room.game);
       }
     }
@@ -282,10 +285,15 @@ io.on('connection', (socket) => {
     const idx = findPlayerIndex(room, playerId);
     if (idx < 0) return;
     if (!game.SUITS.includes(suit)) return;
+    if (room.game.pendingSuitPlayer !== idx) {
+      return socket.emit('error-msg', 'Deze speler mag de kleur niet kiezen');
+    }
     const wasPlayerTurn = room.game.turn === idx;
+    const jokerChoice = room.game.discard[room.game.discard.length - 1]?.r === 'JKR';
     game.declareSuit(room.game, idx, suit);
-    // If this was the current player's turn (J/Joker play), advance after declaration
-    if (wasPlayerTurn && (room.game.winner === null || room.game.winner === undefined)) {
+    // A J is declared by its player before the turn advances. A Joker is declared
+    // by the next player, whose turn is already active.
+    if (wasPlayerTurn && !jokerChoice && (room.game.winner === null || room.game.winner === undefined)) {
       game.advanceTurn(room.game);
     }
     broadcast(currentRoom);
