@@ -131,10 +131,30 @@ function reshuffleIfEmpty(game) {
   }
 }
 
+function refillStock(game) {
+  // Try to reshuffle discard into deck first.
+  reshuffleIfEmpty(game);
+  // If we still need more, add a new deck. (Each deck has 54 cards.)
+  if (game.deck.length === 0 && game.discard.length > 1) {
+    // Still empty — fall through to add new deck.
+  }
+  if (game.deck.length === 0) {
+    // Add a new full deck to keep things going.
+    const newDeck = buildDeck();
+    const nextDeck = [...newDeck, ...game.deck];
+    game.deck = shuffle(nextDeck);
+    game.decksUsed = (game.decksUsed || 1) + 1;
+    game.events = game.events || [];
+    game.events.push({ kind: 'refill', addedDecks: 1, totalDecks: game.decksUsed, t: Date.now() });
+  }
+}
+
 function takeFromStock(game, n) {
   const taken = [];
   for (let i = 0; i < n; i++) {
-    reshuffleIfEmpty(game);
+    if (game.deck.length === 0) {
+      refillStock(game);
+    }
     if (game.deck.length === 0) break;
     taken.push(game.deck.pop());
   }
@@ -367,7 +387,7 @@ module.exports = {
   isStackable, isEffect, isNumber,
   playable, rankOf, suitOf,
   createGame, addPlayer, startGame,
-  reshuffleIfEmpty, takeFromStock,
+  reshuffleIfEmpty, refillStock, takeFromStock,
   publicState,
   canPlayCard, applyPlay, declareSuit,
   applyTake, applyDraw, applySkip,
