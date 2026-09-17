@@ -90,7 +90,34 @@ class PestenClient {
     this.playerId = null;
     this.code = null;
     this.name = null;
+    this.avatar = null;
+    this.accountId = null; // username if registered, null for guest
     this.listeners = {};
+    this.loadFromStorage();
+  }
+  loadFromStorage() {
+    try {
+      const stored = JSON.parse(localStorage.getItem('pesten.auth') || 'null');
+      if (stored) {
+        this.playerId = stored.playerId || null;
+        this.name = stored.name || null;
+        this.avatar = stored.avatar || null;
+        this.accountId = stored.accountId || null;
+        this.lastRoom = stored.lastRoom || null;
+      }
+    } catch (e) {}
+  }
+  saveToStorage() {
+    localStorage.setItem('pesten.auth', JSON.stringify({
+      playerId: this.playerId,
+      name: this.name,
+      avatar: this.avatar,
+      accountId: this.accountId,
+      lastRoom: this.code,
+    }));
+  }
+  clearStorage() {
+    localStorage.removeItem('pesten.auth');
   }
   on(event, fn) {
     (this.listeners[event] = this.listeners[event] || []).push(fn);
@@ -115,8 +142,17 @@ class PestenClient {
       this.fire('error', m);
     });
   }
-  create(name, ack) { this.emit('create', { name }, ack); }
-  join(code, name, ack) { this.emit('join', { code, name }, ack); }
+  create(opts, ack) {
+    // opts: { name, avatar, username?, password?, playerId? }
+    this.emit('create', opts, ack);
+  }
+  join(code, opts, ack) {
+    // opts: { name?, avatar?, playerId? }
+    this.emit('join', { code, ...opts }, ack);
+  }
+  register(opts, ack) { this.emit('register', opts, ack); }
+  login(opts, ack) { this.emit('login', opts, ack); }
+  rejoin(code, playerId, ack) { this.emit('rejoin', { code, playerId }, ack); }
   start(ack) { this.emit('start', {}, ack); }
   play(idx, ack) { this.emit('play', { cardIndex: idx }, ack); }
   playDump(order, ack) { this.emit('playDump', { order }, ack); }
@@ -130,6 +166,14 @@ class PestenClient {
   removeAi(id, ack) { this.emit('removeAi', { aiId: id }, ack); }
 }
 
+function avatarUrl(file) {
+  if (!file) return '/avatars/p1.svg';
+  if (file.startsWith('http')) return file;
+  return '/avatars/' + file;
+}
+
+
 window.PestenClient = PestenClient;
 window.renderCard = renderCard;
 window.SUITS = SUITS;
+window.avatarUrl = avatarUrl;

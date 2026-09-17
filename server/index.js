@@ -7,8 +7,13 @@ const game = require('./game');
 const ai = require('./ai');
 const profiles = require('./profiles');
 const t = require('./i18n');
+const auth = require('./auth');
 
 const nanoid = customAlphabet('ABCDEFGHJKLMNPQRSTUVWXYZ23456789', 5);
+// Dutch name pools for AI players
+const AI_NAMES_M = ['Daan','Sem','Lucas','Finn','Levi','Noah','Milan','Sam','Bram','Liam','Luuk','Thijs','Julian','Noud','Gijs','Teun','Stijn','Sven','Lars','Ruben','Mark','Joris','Tim','Niels','Tom','Jeroen','Pepijn','Roel','Floris','Hugo','Bas','Vince','Pieter','Jan','Kees','Max'];
+const AI_NAMES_F = ['Emma','Julia','Mila','Tess','Sophie','Zoë','Anna','Eva','Saar','Lieke','Fenna','Sanne','Noor','Lynn','Roos','Evi','Yara','Fleur','Lotte','Hannah','Lisa','Anne','Sofie','Maria','Femke','Wendy','Inge','Ilse','Mirthe','Puck','Fenne','Maud','Britt','Bo','Jade','Veerle','Noortje','Sara','Nina','Ella','Liv','Suze','Cato','Kiki','Maya'];
+
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: '*' } });
@@ -72,57 +77,147 @@ io.on('connection', (socket) => {
     cb && cb({ ok: true, profiles: pub });
   });
 
-  socket.on('create', ({ name }, ack) => {
-    const cb = typeof ack === 'function' ? ack : null;
-    const code = nanoid();
-    const room = getRoom(code);
-    playerId = nanoid();
-    playerName = (name || 'Speler').slice(0, 20);
-    const ok = game.addPlayer(room.game, playerId, playerName);
-    if (!ok) {
-      return cb && cb({ ok: false, error: t.roomFull });
-    }
-    room.sockets.set(socket.id, { playerId, name: playerName });
-    socket.join(code);
-    currentRoom = code;
-    logAction(code, t.joinedLobby(playerName), 'join');
-    cb && cb({ ok: true, code, playerId });
-    broadcast(code);
-    broadcastChat(code);
-  });
-
-  socket.on('join', ({ code, name }, ack) => {
-    const cb = typeof ack === 'function' ? ack : null;
-    code = (code || '').toUpperCase();
-    if (!rooms.has(code)) {
-      return cb && cb({ ok: false, error: t.roomNotFound });
-    }
-    const room = rooms.get(code);
-    if (room.game.phase !== 'waiting') {
-      const existing = room.game.players.find(p => p.name === (name || '').slice(0,20));
-      if (!existing) {
-        return cb && cb({ ok: false, error: t.gameAlreadyStarted });
+  socket.on('create', ({ name, avatar, username, password, playerId }, ack) => {
+      const cb = typeof ack === 'function' ? ack : null;
+      const code = nanoid();
+      const room = getRoom(code);
+      // Resolve identity. Three paths:
+      //   1. Authenticated: username + password
+      //   2. Returning user with stored playerId matches a known account
+      //   3. New guest
+      let user = null;
+      if (username && password) {
+        const r = auth.login({ username, password });
+        if (!r.ok) return cb && cb({ ok: false, error: r.error });
+        user = r.user;
+        playerId = user.playerId;
+        avatar = user.avatar;
+      } else if (playerId && typeof playerId === 'string' && playerId.startsWith('u_')) {
+        // Returning authenticated user whose playerId matches a registered account
+        const u = auth.getByPlayerId(playerId);
+        if (u) {
+          user = u;
+          playerName = user.name.slice(0, 20);
+          avatar = user.avatar;
+        }
       }
-      playerId = existing.id;
-      playerName = existing.name;
-      existing.connected = true;
-      logAction(code, t.reconnected(playerName), 'join');
-    } else {
-      playerId = nanoid();
-      playerName = (name || 'Speler').slice(0, 20);
-      const ok = game.addPlayer(room.game, playerId, playerName);
+      if (!user) {
+        if (!playerId) playerId = nanoid();
+        playerName = (name || 'Speler').slice(0, 20);
+        avatar = avatar || 'p1.svg';
+      } else {
+        playerId = user.playerId;
+        playerName = user.name.slice(0, 20);
+        avatar = user.avatar;
+      }
+      const ok = game.addPlayer(room.game, playerId, playerName, avatar);
       if (!ok) {
         return cb && cb({ ok: false, error: t.roomFull });
       }
-    }
-    room.sockets.set(socket.id, { playerId, name: playerName });
-    socket.join(code);
-    currentRoom = code;
-    logAction(code, t.joinedLobby(playerName), 'join');
-    cb && cb({ ok: true, code, playerId });
-    broadcast(code);
-    broadcastChat(code);
-  });
+      const p = room.game.players[room.game.players.length - 1];
+      p.accountId = user ? user.username : null;
+      socket._avatar = avatar;
+      room.sockets.set(socket.id, { playerId, name: playerName, avatar });
+      socket.join(code);
+      currentRoom = code;
+      logAction(code, t.joinedLobby(playerName), 'join');
+      cb && cb({ ok: true, code, playerId, avatar, name: playerName });
+      broadcast(code);
+      broadcastChat(code);
+    });
+
+    socket.on('register', ({ username, password, name, avatar }, ack) => {
+      const cb = typeof ack === 'function' ? ack : null;
+      if (!username) return cb && cb({ ok: false, error: 'Vul een gebruikersnaam in' });
+      const r = auth.register({ username, password, name, avatar });
+      if (!r.ok) return cb && cb({ ok: false, error: r.error });
+      // The user now has a stable playerId. Mirror it onto the active socket so rejoin works.
+      playerId = r.user.playerId;
+      playerName = r.user.name;
+      socket._avatar = r.user.avatar;
+      cb && cb({ ok: true, user: r.user });
+    });
+
+    socket.on('login', ({ username, password }, ack) => {
+      const cb = typeof ack === 'function' ? ack : null;
+      if (!username || !password) return cb && cb({ ok: false, error: 'Vul alles in' });
+      const r = auth.login({ username, password });
+      if (!r.ok) return cb && cb({ ok: false, error: r.error });
+      // Set the socket's playerId so rejoin uses the right id.
+      playerId = r.user.playerId;
+      playerName = r.user.name;
+      socket._avatar = r.user.avatar;
+      cb && cb({ ok: true, user: r.user });
+    });
+
+    socket.on('rejoin', ({ code, playerId: pid }, ack) => {
+      const cb = typeof ack === 'function' ? ack : null;
+      const upper = (code || '').toUpperCase();
+      if (!rooms.has(upper)) {
+        return cb && cb({ ok: false, error: 'Kamer niet gevonden of spel is afgelopen' });
+      }
+      const room = rooms.get(upper);
+      const found = room.game.players.find(p => p.id === pid);
+      if (!found) {
+        return cb && cb({ ok: false, error: 'Speler niet meer in deze kamer' });
+      }
+      if (room.game.phase !== 'waiting') {
+        found.connected = true;
+      }
+      playerId = pid;
+      playerName = found.name;
+      room.sockets.set(socket.id, { playerId, name: playerName, avatar: found.avatar });
+      socket.join(upper);
+      currentRoom = upper;
+      logAction(upper, t.reconnected(playerName), 'join');
+      cb && cb({ ok: true, code: upper, playerId: pid, name: found.name, avatar: found.avatar, phase: room.game.phase });
+      broadcast(upper);
+      broadcastChat(upper);
+    });
+
+    socket.on('whoami', (ack) => {
+      const cb = typeof ack === 'function' ? ack : null;
+      cb && cb({ ok: true, playerId, name: playerName, currentRoom });
+    });
+
+    socket.on('join', ({ code, name, avatar, playerId: pid }, ack) => {
+      const cb = typeof ack === 'function' ? ack : null;
+      code = (code || '').toUpperCase();
+      if (!rooms.has(code)) {
+        return cb && cb({ ok: false, error: t.roomNotFound });
+      }
+      const room = rooms.get(code);
+      if (room.game.phase !== 'waiting') {
+        // Try to find a matching seat by stable playerId (rejoin)
+        const existing = pid
+          ? room.game.players.find(p => p.id === pid)
+          : room.game.players.find(p => p.name === (name || '').slice(0, 20));
+        if (!existing) {
+          return cb && cb({ ok: false, error: t.gameAlreadyStarted });
+        }
+        playerId = existing.id;
+        playerName = existing.name;
+        existing.connected = true;
+        socket._avatar = existing.avatar;
+        logAction(code, t.reconnected(playerName), 'join');
+      } else {
+        if (!pid) pid = nanoid();
+        playerId = pid;
+        playerName = (name || 'Speler').slice(0, 20);
+        const ok = game.addPlayer(room.game, playerId, playerName, avatar);
+        if (!ok) {
+          return cb && cb({ ok: false, error: t.roomFull });
+        }
+        socket._avatar = avatar;
+      }
+      room.sockets.set(socket.id, { playerId, name: playerName, avatar: socket._avatar });
+      socket.join(code);
+      currentRoom = code;
+      logAction(code, t.joinedLobby(playerName), 'join');
+      cb && cb({ ok: true, code, playerId });
+      broadcast(code);
+      broadcastChat(code);
+    });
 
   socket.on('start', (ack) => {
     const cb = typeof ack === 'function' ? ack : null;
@@ -250,7 +345,7 @@ io.on('connection', (socket) => {
     msg = (msg || '').slice(0, 500);
     if (!msg.trim()) return;
     const room = getRoom(currentRoom);
-    const entry = { name: playerName, msg, t: Date.now(), ai: false };
+    const entry = { name: playerName, msg, t: Date.now(), ai: false, playerId, avatar: socket._avatar };
     room.chat.push(entry);
     if (room.chat.length > 200) room.chat.shift();
     // Reset AI↔AI chain depth on every human message — humans always re-open the floor
@@ -264,9 +359,14 @@ io.on('connection', (socket) => {
     if (!currentRoom) return cb && cb({ ok: false, error: 'Niet in een kamer' });
     const room = getRoom(currentRoom);
     if (room.game.phase !== 'waiting') return cb && cb({ ok: false, error: 'Spel al begonnen' });
-    // Sanitize and dedupe the requested AI name
+    // Sanitize and dedupe the requested AI name. If none provided, pick from gender-aware pool.
     let requested = (name || '').toString().trim().slice(0, 16);
-    if (!requested) requested = 'AI';
+    if (!requested) {
+      // Alternate gender for variety
+      const useFemale = Math.random() < 0.5;
+      const pool = useFemale ? AI_NAMES_F : AI_NAMES_M;
+      requested = pool[Math.floor(Math.random() * pool.length)];
+    }
     let aiName = requested;
     const existingNames = new Set(room.game.players.map(p => p.name.toLowerCase()));
     if (existingNames.has(aiName.toLowerCase())) {
@@ -282,13 +382,16 @@ io.on('connection', (socket) => {
     }
     const profile = profiles[profileKeyFinal];
     const aiId = 'ai_' + nanoid();
-    const ok = game.addPlayer(room.game, aiId, aiName);
+    // Random avatar from the 20 portraits
+    const avatarNum = 1 + Math.floor(Math.random() * 20);
+    const ok = game.addPlayer(room.game, aiId, aiName, `p${avatarNum}.svg`);
     if (!ok) return cb && cb({ ok: false, error: t.roomFull });
     const aiPlayer = room.game.players[room.game.players.length - 1];
     aiPlayer.isAi = true;
     aiPlayer.profileKey = profileKeyFinal;
     aiPlayer.profileColor = profile.color;
     aiPlayer.profileTagline = profile.tagline;
+    aiPlayer.gender = Math.random() < 0.5 ? 'm' : 'f';
     logAction(currentRoom, t.aiJoined(aiName), 'join');
     cb && cb({ ok: true, profileKey: profileKeyFinal, profileName: profile.name_nl });
     broadcast(currentRoom);
@@ -372,7 +475,7 @@ async function maybeAiRespond(code, lastMsg, opts = {}) {
       const mentionMatch = cleanReply.match(/(?:^|\s)@?([A-Z][a-zA-Zà-ÿ]{1,14})(?:\b|$)/);
       const mentionedName = mentionMatch ? mentionMatch[1] : null;
 
-      room.chat.push({ name: responder.name, msg: cleanReply, t: now, ai: true });
+      room.chat.push({ name: responder.name, msg: cleanReply, t: now, ai: true, playerId: responder.id, avatar: responder.avatar });
       if (room.chat.length > 200) room.chat.shift();
       room.aiLastReplyAt[responder.id] = now;
       broadcastChat(code);
@@ -480,7 +583,7 @@ async function maybeRunAiTurn(code) {
           logAction(code, t.declaredSuit(curPlayer.name, suit), 'effect');
         }
         if (decision.chat) {
-          room.chat.push({ name: curPlayer.name, msg: decision.chat.slice(0, 200), t: Date.now(), ai: true });
+          room.chat.push({ name: curPlayer.name, msg: decision.chat.slice(0, 200), t: Date.now(), ai: true, playerId: curPlayer.id, avatar: curPlayer.avatar });
           if (room.chat.length > 200) room.chat.shift();
         }
         if (room.game.winner !== null && room.game.winner !== undefined) {

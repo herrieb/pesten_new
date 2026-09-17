@@ -170,45 +170,193 @@ function fmtTime(ts) {
 }
 
 // ============================================================
-// Lobby
+// AUTH SCREEN
+// ============================================================
+
+const AVATAR_COUNT = 20;
+let guestSelectedAvatar = null;
+let registerSelectedAvatar = null;
+
+function renderAvatarGrid(container, onSelect) {
+  container.innerHTML = '';
+  for (let i = 1; i <= AVATAR_COUNT; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'avatar-cell';
+    cell.dataset.avatar = `p${i}.svg`;
+    cell.innerHTML = `<img src="/avatars/p${i}.svg" alt="avatar ${i}" />`;
+    cell.addEventListener('click', () => {
+      $$('.avatar-cell', container).forEach(c => c.classList.remove('selected'));
+      cell.classList.add('selected');
+      onSelect(cell.dataset.avatar);
+    });
+    container.appendChild(cell);
+  }
+}
+
+function updateAuthButtons() {
+  // Disable buttons until name + avatar are present (where required)
+  const guestName = $('#auth-guest-name').value.trim();
+  $('#btn-auth-guest').disabled = !(guestName && guestSelectedAvatar);
+
+  const regUser = $('#auth-reg-user').value.trim();
+  const regPass = $('#auth-reg-pass').value;
+  $('#btn-auth-register').disabled = !(regUser.length >= 2 && regPass.length >= 3 && registerSelectedAvatar);
+}
+
+function bindAuthScreen() {
+  // Tab switching
+  $$('.auth-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      $$('.auth-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      const target = tab.dataset.tab;
+      $$('.auth-pane').forEach(p => p.hidden = p.dataset.pane !== target);
+    });
+  });
+
+  // Default: random avatar selected
+  guestSelectedAvatar = 'p1.svg';
+  registerSelectedAvatar = 'p1.svg';
+
+  renderAvatarGrid($('#avatar-grid-guest'), (file) => {
+    guestSelectedAvatar = file;
+    updateAuthButtons();
+  });
+  renderAvatarGrid($('#avatar-grid-register'), (file) => {
+    registerSelectedAvatar = file;
+    updateAuthButtons();
+  });
+  // Pre-select first cell
+  ['#avatar-grid-guest', '#avatar-grid-register'].forEach(sel => {
+    const first = $(`${sel} .avatar-cell`);
+    if (first) first.classList.add('selected');
+  });
+
+  $('#auth-guest-name').addEventListener('input', updateAuthButtons);
+  $('#auth-reg-user').addEventListener('input', updateAuthButtons);
+  $('#auth-reg-pass').addEventListener('input', updateAuthButtons);
+
+  // Guest
+  $('#btn-auth-guest').addEventListener('click', () => {
+    const name = $('#auth-guest-name').value.trim();
+    if (!name || !guestSelectedAvatar) return;
+    // Set up guest session, generate a stable playerId locally
+    const pid = client.playerId || ('g_' + Math.random().toString(36).slice(2, 10));
+    client.playerId = pid;
+    client.name = name;
+    client.avatar = guestSelectedAvatar;
+    client.accountId = null;
+    client.saveToStorage();
+    enterLobby();
+  });
+
+  // Login
+  $('#btn-auth-login').addEventListener('click', () => {
+    const username = $('#auth-login-user').value.trim();
+    const password = $('#auth-login-pass').value;
+    const msg = $('#auth-login-msg');
+    msg.className = 'auth-msg';
+    msg.textContent = 'Bezig…';
+    client.login({ username, password }, (res) => {
+      if (!res.ok) {
+        msg.className = 'auth-msg error';
+        msg.textContent = res.error || 'Inloggen mislukt';
+        return;
+      }
+      client.playerId = res.user.playerId;
+      client.name = res.user.name;
+      client.avatar = res.user.avatar;
+      client.accountId = res.user.username;
+      client.saveToStorage();
+      enterLobby();
+    });
+  });
+
+  // Register
+  $('#btn-auth-register').addEventListener('click', () => {
+    const username = $('#auth-reg-user').value.trim();
+    const password = $('#auth-reg-pass').value;
+    const name = $('#auth-reg-name').value.trim();
+    const msg = $('#auth-reg-msg');
+    msg.className = 'auth-msg';
+    msg.textContent = 'Account aanmaken…';
+    client.register({ username, password, name, avatar: registerSelectedAvatar }, (res) => {
+      if (!res.ok) {
+        msg.className = 'auth-msg error';
+        msg.textContent = res.error || 'Registreren mislukt';
+        return;
+      }
+      client.playerId = res.user.playerId;
+      client.name = res.user.name;
+      client.avatar = res.user.avatar;
+      client.accountId = res.user.username;
+      client.saveToStorage();
+      enterLobby();
+    });
+  });
+}
+
+function enterLobby() {
+  // Populate lobby identity
+  $('#lobby-name').textContent = client.name;
+  $('#lobby-name-big').textContent = client.name;
+  $('#lobby-avatar').src = avatarUrl(client.avatar);
+  $('#lobby-account').textContent = client.accountId
+    ? `Ingelogd als @${client.accountId}`
+    : 'Gast-sessie';
+  $('#btn-logout').hidden = !client.accountId;
+  showScreen('#screen-lobby');
+}
+
+// ============================================================
+// LOBBY (after auth)
 // ============================================================
 
 $('#btn-create').addEventListener('click', () => {
-  const name = $('#create-name').value.trim() || 'Speler';
-  client.create(name, (res) => {
+  const opts = {
+    name: client.name,
+    avatar: client.avatar,
+    playerId: client.playerId,
+  };
+  client.create(opts, (res) => {
     if (!res.ok) { alert(res.error || 'Aanmaken mislukt'); return; }
     client.playerId = res.playerId;
     client.code = res.code;
-    client.name = name;
+    client.avatar = res.avatar || client.avatar;
+    client.saveToStorage();
     enterRoom();
   });
 });
 
 $('#btn-join').addEventListener('click', () => {
   const code = $('#join-code').value.trim().toUpperCase();
-  const name = $('#join-name').value.trim() || 'Speler';
   if (!code) { alert('Vul een kamercode in'); return; }
-  client.join(code, name, (res) => {
+  client.join(code, {
+    name: client.name,
+    avatar: client.avatar,
+    playerId: client.playerId,
+  }, (res) => {
     if (!res.ok) { alert(res.error || 'Deelnemen mislukt'); return; }
     client.playerId = res.playerId;
     client.code = res.code;
-    client.name = name;
+    client.saveToStorage();
     enterRoom();
   });
 });
 
-$('#btn-solo').addEventListener('click', async () => {
-  const name = $('#join-name').value.trim() || $('#create-name').value.trim() || 'Speler';
-  client.create(name, (res) => {
+$('#btn-solo').addEventListener('click', () => {
+  client.create({
+    name: client.name,
+    avatar: client.avatar,
+    playerId: client.playerId,
+  }, (res) => {
     if (!res.ok) { alert(res.error || 'Aanmaken mislukt'); return; }
     client.playerId = res.playerId;
     client.code = res.code;
-    client.name = name;
+    client.saveToStorage();
     enterRoom();
-    // Pick a random Dutch name + random profile for the AI opponent
     const pool = window.DUTCH_AI_NAMES || ['AI'];
     const aiName = pool[Math.floor(Math.random() * pool.length)];
-    // After profiles load, pick one. Otherwise let the server pick one for us.
     fetchProfiles().then((profiles) => {
       const keys = Object.keys(profiles);
       const profileKey = keys.length ? keys[Math.floor(Math.random() * keys.length)] : null;
@@ -217,6 +365,29 @@ $('#btn-solo').addEventListener('click', async () => {
       }), 300);
     });
   });
+});
+
+$('#btn-logout').addEventListener('click', () => {
+  if (!confirm('Uitloggen? Je verliest je sessie maar je account blijft bestaan.')) return;
+  client.clearStorage();
+  client.playerId = null;
+  client.name = null;
+  client.avatar = null;
+  client.accountId = null;
+  showScreen('#screen-auth');
+});
+
+$('#btn-change-profile').addEventListener('click', () => {
+  // For guests: just return to auth screen.
+  // For logged in: clear stored avatar choice (the auth screen lets them pick a new one).
+  showScreen('#screen-auth');
+  // Pre-populate name field
+  if (client.name) $('#auth-guest-name').value = client.name;
+  // Set form to register tab if logged in (so they can change avatar there)
+  if (client.accountId) {
+    $$('.auth-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === 'register'));
+    $$('.auth-pane').forEach(p => p.hidden = p.dataset.pane !== 'register');
+  }
 });
 
 $('#link-rules').addEventListener('click', (e) => {
@@ -230,7 +401,12 @@ $('#btn-rules-game').addEventListener('click', () => $('#rules-modal').hidden = 
 // Room (pre-game lobby)
 // ============================================================
 
-function enterRoom() {
+function enterRoom(phaseOverride) {
+  // If we know the game is already in play, jump straight there.
+  if (phaseOverride === 'playing' || (client.state && client.state.phase === 'playing')) {
+    showScreen('#screen-game');
+    return;
+  }
   showScreen('#screen-room');
   $('#room-code-display').textContent = client.code;
   $('#you-label').textContent = client.name;
@@ -365,8 +541,9 @@ function renderRoom(state) {
   state.players.forEach((p, i) => {
     const li = document.createElement('li');
     li.className = 'player-row' + (i === state.youIndex ? ' is-you' : '') + (p.isAi ? ' is-ai' : '');
+    const ava = p.avatar || 'p1.svg';
     li.innerHTML = `
-      <div class="avatar">${initials(p.name)}</div>
+      <img class="player-avatar" src="${escapeHtml(avatarUrl(ava))}" alt="" />
       <div class="name">${escapeHtml(p.name)}</div>
       <span class="badge ${p.isAi ? 'bot' : ''}">${i === state.youIndex ? 'Jij' : (p.isAi ? 'AI' : 'Speler ' + (i+1))}</span>
       ${p.isAi && i !== state.youIndex ? `<button class="remove-btn" data-id="${p.id}" title="Verwijder">×</button>` : ''}
@@ -425,8 +602,9 @@ function renderOpponents(state) {
     }
     const miniature = p.count > 0 ? '<div class="opp-card-back"></div>' : '';
     const tooltip = p.profileTagline ? ` title="${escapeHtml(p.profileTagline)}"` : '';
+    const ava = p.avatar || 'p1.svg';
     div.innerHTML = `
-      <div class="avatar"${tooltip}>${initials(p.name)}</div>
+      <img class="opp-avatar" src="${escapeHtml(avatarUrl(ava))}" alt=""${tooltip} />
       <div>
         <div class="name">${escapeHtml(p.name)} ${p.isAi ? '<span class="profile-badge">' + escapeHtml(profileShort(p.profileKey)) + '</span>' : ''}</div>
         <div class="count">${p.count} kaart${p.count === 1 ? '' : 'en'}</div>
@@ -918,25 +1096,37 @@ $('#btn-back-lobby').addEventListener('click', () => {
 // ============================================================
 
 function renderChat(chat) {
-  const log = $('#chat-log');
-  log.innerHTML = '';
-  chat.forEach(c => {
+  function avatarFor(entry) {
+    if (entry.avatar) return entry.avatar;
+    // Look up by playerId in current state
+    if (client.state && entry.playerId) {
+      const p = client.state.players.find(pp => pp.id === entry.playerId);
+      if (p && p.avatar) return p.avatar;
+    }
+    return 'p1.svg';
+  }
+  function buildMessage(entry) {
     const div = document.createElement('div');
-    div.className = 'chat-msg' + (c.ai ? ' ai' : '') + (c.name === client.name ? ' you' : '');
-    div.innerHTML = `<span class="who">${escapeHtml(c.name)}</span>${escapeHtml(c.msg)}`;
-    log.appendChild(div);
-  });
-  log.scrollTop = log.scrollHeight;
+    div.className = 'chat-msg' + (entry.ai ? ' ai' : '') + (entry.name === client.name ? ' you' : '');
+    div.innerHTML =
+      `<img class="chat-avatar" src="${escapeHtml(avatarUrl(avatarFor(entry)))}" alt="" />` +
+      `<div class="chat-msg-body">` +
+        `<span class="who">${escapeHtml(entry.name)}</span>` +
+        `<span class="msg-text">${escapeHtml(entry.msg)}</span>` +
+      `</div>`;
+    return div;
+  }
+  const log = $('#chat-log');
+  if (log) {
+    log.innerHTML = '';
+    chat.forEach(c => log.appendChild(buildMessage(c)));
+    log.scrollTop = log.scrollHeight;
+  }
   // Mirror to game-screen chat
   const gameLog = $('#game-chat-log');
   if (gameLog) {
     gameLog.innerHTML = '';
-    chat.forEach(c => {
-      const div = document.createElement('div');
-      div.className = 'chat-msg' + (c.ai ? ' ai' : '') + (c.name === client.name ? ' you' : '');
-      div.innerHTML = `<span class="who">${escapeHtml(c.name)}</span>${escapeHtml(c.msg)}`;
-      gameLog.appendChild(div);
-    });
+    chat.forEach(c => gameLog.appendChild(buildMessage(c)));
     gameLog.scrollTop = gameLog.scrollHeight;
   }
 }
@@ -970,13 +1160,6 @@ function escapeHtml(s) {
 
 // ============================================================
 // Init
+// Client is instantiated by the inline boot script in index.html
+// which also calls connect() and bindAuthScreen().
 // ============================================================
-client.on('state', (s) => {
-  renderGame(s);
-  maybeShowGameOver(s);
-  maybeShowEffectBanner(s);
-});
-client.on('chat', (c) => renderChat(c));
-client.on('error', (m) => alert(m));
-
-client.connect();

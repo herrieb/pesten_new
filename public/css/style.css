@@ -1519,3 +1519,175 @@ html, body {
     max-height: 140px;
   }
 }
+
+/* ============================================================
+   AUTH SCREEN
+   ============================================================ */
+.auth-card {
+  max-width: 540px;
+  width: 100%;
+  margin: 0 auto;
+}
+.auth-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 18px;
+  border-bottom: 1px solid var(--border);
+}
+.auth-tab {
+  flex: 1;
+  background: transparent;
+  color: var(--fg-muted);
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 10px 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  transition: color 0.15s, border-color 0.15s;
+}
+.auth-tab:hover { color: var(--fg); }
+.auth-tab.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+.auth-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.auth-pane label.small {
+  margin-top: 6px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.auth-pane input {
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--bg-1);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  color: var(--fg);
+  font-size: 14px;
+}
+.auth-pane input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+.auth-pane .btn[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.auth-msg {
+  font-size: 13px;
+  min-height: 18px;
+  margin: 6px 0 0;
+}
+.auth-msg.error { color: #ff7b6e; }
+.auth-msg.ok { color: var(--accent); }
+
+/* Avatar grid (used in auth screen AND modal pickers) */
+.avatar-grid {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 8px;
+  margin-top: 8px;
+}
+@media (max-width: 540px) {
+  .avatar-grid { grid-template-columns: repeat(5, 1fr); }
+}
+.avatar-cell {
+  background: var(--bg-1);
+  border: 2px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 4px;
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.1s;
+}
+.avatar-cell:hover { border-color: var(--fg-muted); }
+.avatar-cell.selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent);
+  background: var(--bg-card);
+}
+.avatar-cell img {
+  width: 100%;
+  aspect-ratio: 1;
+  display: block;
+  border-radius: var(--r-sm);
+}
+
+/* Lobby identity bar */
+.lobby-identity {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 18px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  max-width: 540px;
+  width: 100%;
+  margin: 0 auto 18px;
+}
+.lobby-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--r-md);
+  background: var(--bg-1);
+}
+.lobby-identity-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.lobby-name-big {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--fg);
+}
+#lobby-account {
+  margin-top: 2px;
+}
+
+/* Chat avatars */
+.chat-msg {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.chat-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  flex: 0 0 28px;
+  background: var(--bg-1);
+}
+.chat-msg-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.chat-msg-body .who {
+  font-size: 12px;
+  color: var(--fg-muted);
+  font-weight: 600;
+}
+.chat-msg-body .msg-text {
+  color: var(--fg);
+  word-break: break-word;
+}
+
+/* Player avatars in room list and opponents row */
+.player-avatar,
+.opp-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: var(--bg-1);
+  flex: 0 0 36px;
+  object-fit: cover;
+}
+.player-avatar { width: 40px; height: 40px; flex-basis: 40px; }

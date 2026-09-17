@@ -16,28 +16,93 @@
 <body>
 
 <!-- ============= LOBBY ============= -->
-<section id="screen-lobby" class="screen active">
+<!-- ============= AUTH ============= -->
+<section id="screen-auth" class="screen">
   <div class="lobby-wrap">
     <div class="brand">
       <div class="brand-mark">
         <span class="suit-red">♦</span><span class="suit-black">♠</span>
       </div>
       <h1>PESTEN</h1>
-      <p class="tagline">Het Nederlandse kaartspel. Online.</p>
+      <p class="tagline">Kies je profiel en speel mee.</p>
+    </div>
+
+    <div class="auth-card panel">
+      <div class="auth-tabs">
+        <button class="auth-tab active" data-tab="guest">Snel gast</button>
+        <button class="auth-tab" data-tab="login">Inloggen</button>
+        <button class="auth-tab" data-tab="register">Registreren</button>
+      </div>
+
+      <!-- GUEST -->
+      <div class="auth-pane auth-pane-guest" data-pane="guest">
+        <p class="muted">Eenmalig een naam en avatar kiezen. Geen account nodig.</p>
+        <label class="muted small">Weergavenaam</label>
+        <input type="text" id="auth-guest-name" placeholder="Jouw naam" maxlength="20" />
+        <label class="muted small">Kies een avatar</label>
+        <div class="avatar-grid" id="avatar-grid-guest"></div>
+        <button class="btn primary" id="btn-auth-guest" disabled>Verder</button>
+      </div>
+
+      <!-- LOGIN -->
+      <div class="auth-pane" data-pane="login" hidden>
+        <p class="muted">Heb je een account? Log in om je opgeslagen profiel te gebruiken.</p>
+        <label class="muted small">Gebruikersnaam</label>
+        <input type="text" id="auth-login-user" placeholder="gebruiker" maxlength="24" autocomplete="username" />
+        <label class="muted small">Wachtwoord</label>
+        <input type="password" id="auth-login-pass" placeholder="••••••" autocomplete="current-password" />
+        <button class="btn primary" id="btn-auth-login">Inloggen</button>
+        <p class="auth-msg" id="auth-login-msg"></p>
+      </div>
+
+      <!-- REGISTER -->
+      <div class="auth-pane" data-pane="register" hidden>
+        <p class="muted">Registreer om je profiel en vorderingen te bewaren.</p>
+        <label class="muted small">Gebruikersnaam</label>
+        <input type="text" id="auth-reg-user" placeholder="kies een naam" maxlength="24" autocomplete="username" />
+        <label class="muted small">Wachtwoord (min 3 tekens)</label>
+        <input type="password" id="auth-reg-pass" placeholder="••••••" autocomplete="new-password" />
+        <label class="muted small">Weergavenaam (optioneel)</label>
+        <input type="text" id="auth-reg-name" placeholder="valt terug op gebruikersnaam" maxlength="20" />
+        <label class="muted small">Kies een avatar</label>
+        <div class="avatar-grid" id="avatar-grid-register"></div>
+        <button class="btn primary" id="btn-auth-register" disabled>Account aanmaken</button>
+        <p class="auth-msg" id="auth-reg-msg"></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="screen-lobby" class="screen">
+  <div class="lobby-wrap">
+    <div class="brand">
+      <div class="brand-mark">
+        <span class="suit-red">♦</span><span class="suit-black">♠</span>
+      </div>
+      <h1>PESTEN</h1>
+      <p id="lobby-welcome" class="tagline">Welkom terug, <span id="lobby-name">speler</span>.</p>
+    </div>
+
+    <div class="lobby-identity">
+      <img class="lobby-avatar" id="lobby-avatar" src="" alt="" />
+      <div class="lobby-identity-text">
+        <span id="lobby-name-big" class="lobby-name-big">Speler</span>
+        <span id="lobby-account" class="muted small"></span>
+      </div>
+      <button class="btn ghost tiny" id="btn-logout" hidden>Uitloggen</button>
+      <button class="btn ghost tiny" id="btn-change-profile">Profiel aanpassen</button>
     </div>
 
     <div class="lobby-cards">
       <div class="panel">
         <h2>Kamer aanmaken</h2>
-        <p class="muted">Start een nieuwe tafel en nodig vrienden uit.</p>
-        <input type="text" id="create-name" placeholder="Jouw naam" maxlength="20" />
+        <p class="muted">Start een nieuwe tafel en nodig vrienden uit met de code.</p>
         <button class="btn primary" id="btn-create">Kamer aanmaken</button>
       </div>
       <div class="panel">
         <h2>Kamer deelnemen</h2>
         <p class="muted">Heb je een code? Doe mee.</p>
         <input type="text" id="join-code" placeholder="KAMERCODE" maxlength="5" style="text-transform:uppercase" />
-        <input type="text" id="join-name" placeholder="Jouw naam" maxlength="20" />
         <button class="btn primary" id="btn-join">Deelnemen</button>
         <button class="btn ghost" id="btn-solo">Speel tegen AI</button>
       </div>
@@ -260,5 +325,54 @@
 <script src="/js/dutch-names.js"></script>
 <script src="/js/game-client.js"></script>
 <script src="/js/ui.js"></script>
+<script>
+  // Boot: connect socket, render auth screen, attempt auto-rejoin if a stored session exists.
+  const client = new PestenClient();
+  window.client = client;
+  client.connect();
+
+  // Persistent UI listeners
+  client.on('state', (s) => {
+    renderGame(s);
+    maybeShowGameOver(s);
+    maybeShowEffectBanner(s);
+  });
+  client.on('chat', (c) => renderChat(c));
+  client.on('error', (m) => alert(m));
+
+  document.addEventListener('DOMContentLoaded', () => {
+    bindAuthScreen();
+    // Try to resume a previous session
+    const stored = JSON.parse(localStorage.getItem('pesten.auth') || 'null');
+    if (stored && stored.playerId && stored.name) {
+      client.playerId = stored.playerId;
+      client.name = stored.name;
+      client.avatar = stored.avatar;
+      client.accountId = stored.accountId;
+      // Try rejoin to last room
+      const lastRoom = stored.lastRoom;
+      if (lastRoom) {
+        showScreen('#screen-auth'); // temporary until rejoin resolves
+        client.rejoin(lastRoom, stored.playerId, (res) => {
+          if (res && res.ok) {
+            client.code = res.code;
+            client.avatar = res.avatar || client.avatar;
+            client.saveToStorage();
+            // If phase is waiting, show room screen (enterRoom will do it).
+            // If phase is playing, jump to game screen.
+            enterRoom(res.phase);
+          } else {
+            // Rejoin failed — show lobby (still has identity)
+            enterLobby();
+          }
+        });
+      } else {
+        enterLobby();
+      }
+    } else {
+      showScreen('#screen-auth');
+    }
+  });
+</script>
 </body>
 </html>

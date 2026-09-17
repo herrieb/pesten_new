@@ -86,10 +86,11 @@ function createGame(numPlayers = 2) {
   };
 }
 
-function addPlayer(game, id, name) {
+function addPlayer(game, id, name, avatar) {
   if (game.players.length >= 4) return false;
   game.players.push({
     id, name: name || `Player ${game.players.length+1}`,
+    avatar: avatar || null,
     hand: [],
     connected: true,
     pendingSuit: null,
@@ -145,6 +146,7 @@ function publicState(game, viewerId) {
     players: game.players.map(p => ({
       id: p.id,
       name: p.name,
+      avatar: p.avatar || null,
       connected: p.connected,
       count: p.hand.length,
       hand: p.id === viewerId ? p.hand : null,
