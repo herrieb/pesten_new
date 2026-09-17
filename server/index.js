@@ -150,7 +150,10 @@ io.on('connection', (socket) => {
       if (!ok) {
         return cb && cb({ ok: false, error: t.roomFull });
       }
-      if (!room.name) room.name = playerName + "'s spel";
+      if (!room.name) {
+        room.name = playerName + "'s spel";
+        room.creatorId = playerId;
+      }
       const p = room.game.players[room.game.players.length - 1];
       p.accountId = user ? user.username : null;
       socket._avatar = avatar;
@@ -487,7 +490,7 @@ io.on('connection', (socket) => {
     const code = currentRoom;
     const room = rooms.get(code);
     const idx = room ? findPlayerIndex(room, playerId) : -1;
-    if (!room || idx !== 0 || room.game.phase !== 'waiting') {
+    if (!room || playerId !== room.creatorId || room.game.phase !== 'waiting') {
       return cb && cb({ ok: false, error: 'Alleen de maker kan een wachtende kamer sluiten' });
     }
     for (const sockId of room.sockets.keys()) {
