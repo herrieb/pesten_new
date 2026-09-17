@@ -752,20 +752,20 @@ function renderHand(state) {
   const top = state.discardTop;
   const declared = state.declaredSuit;
 
-  hand.forEach((c, i) => {
+  const orderedHand = hand.map((card, index) => {
     let playable = false;
-    let disabled = false;
     if (isMyTurn) {
       if (state.pendingTake > 0) {
-        // Must stack
-        playable = c.r === '2' || c.r === 'JKR';
-        disabled = !playable;
+        playable = card.r === '2' || card.r === 'JKR';
       } else {
-        playable = canPlayClient(c, top, declared);
+        playable = canPlayClient(card, top, declared);
       }
-    } else {
-      disabled = true;
     }
+    return { card, index, playable };
+  });
+  // Keep the hand order stable within each group, but put playable cards first.
+  orderedHand.sort((a, b) => Number(b.playable) - Number(a.playable));
+  orderedHand.forEach(({ card: c, index: i, playable }) => {
     const card = renderCard(c, {
       disabled: !playable,
       playable,
