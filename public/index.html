@@ -345,6 +345,7 @@
     maybeShowEffectBanner(s);
   });
   client.on('chat', (c) => renderChat(c));
+  client.on('rooms', (rooms) => renderAvailableRooms(rooms));
   client.on('error', (m) => alert(m));
 
   document.addEventListener('DOMContentLoaded', () => {
