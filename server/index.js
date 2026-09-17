@@ -45,6 +45,20 @@ function broadcastRooms() {
   io.emit('rooms', publicRooms());
 }
 
+function cleanupRoomIfNoHumans(code) {
+  const room = rooms.get(code);
+  if (!room) return true;
+  const hasHuman = room.game.players.some(player => !player.isAi && player.connected !== false);
+  if (hasHuman) return false;
+  for (const sockId of room.sockets.keys()) {
+    io.to(sockId).emit('roomClosed', { code });
+  }
+  rooms.delete(code);
+  room.sockets.clear();
+  broadcastRooms();
+  return true;
+}
+
 function broadcast(code) {
   const room = getRoom(code);
   for (const [sockId, info] of room.sockets) {
@@ -467,25 +481,6 @@ io.on('connection', (socket) => {
     broadcast(currentRoom);
   });
 
-  socket.on('endGame', (payload, ack) => {
-    const cb = typeof ack === 'function' ? ack : (typeof payload === 'function' ? payload : null);
-    if (!currentRoom) return cb && cb({ ok: false, error: 'Geen actieve kamer' });
-    const code = currentRoom;
-    const room = rooms.get(code);
-    const idx = room ? findPlayerIndex(room, playerId) : -1;
-    if (!room || idx !== 0) return cb && cb({ ok: false, error: 'Alleen de host kan het spel beëindigen' });
-
-    for (const sockId of room.sockets.keys()) {
-      io.to(sockId).emit('roomClosed', { code });
-    }
-    rooms.delete(code);
-    room.sockets.clear();
-    currentRoom = null;
-    playerId = null;
-    broadcastRooms();
-    cb && cb({ ok: true, closed: true });
-  });
-
   socket.on('leaveRoom', (payload, ack) => {
     const cb = typeof ack === 'function' ? ack : (typeof payload === 'function' ? payload : null);
     if (!currentRoom) return cb && cb({ ok: true });
@@ -493,26 +488,16 @@ io.on('connection', (socket) => {
     const room = rooms.get(code);
     if (room) {
       const idx = findPlayerIndex(room, playerId);
-      if (idx >= 0 && room.game.phase === 'ended' && idx === 0) {
-        // The host ends a completed game for every connected player.
-        for (const sockId of room.sockets.keys()) {
-          io.to(sockId).emit('roomClosed', { code });
-        }
-        rooms.delete(code);
-        room.sockets.clear();
-        socket.leave(code);
-        currentRoom = null;
-        playerId = null;
-        broadcastRooms();
-        return cb && cb({ ok: true, closed: true });
-      }
       if (idx >= 0) {
-        room.game.players[idx].connected = false;
+        room.game.players.splice(idx, 1);
         logAction(code, t.disconnected(playerName), 'leave');
       }
       room.sockets.delete(socket.id);
       socket.leave(code);
-      broadcast(code);
+      currentRoom = null;
+      playerId = null;
+      if (!cleanupRoomIfNoHumans(code)) broadcast(code);
+      return cb && cb({ ok: true, removed: true });
     }
     currentRoom = null;
     playerId = null;
@@ -528,7 +513,8 @@ io.on('connection', (socket) => {
       logAction(currentRoom, t.disconnected(playerName), 'leave');
     }
     room.sockets.delete(socket.id);
-    broadcast(currentRoom);
+    const code = currentRoom;
+    if (!cleanupRoomIfNoHumans(code) && rooms.has(code)) broadcast(code);
   });
 });
 

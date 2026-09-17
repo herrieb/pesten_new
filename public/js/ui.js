@@ -1135,7 +1135,7 @@ function maybeShowGameOver(state) {
   }
 }
 $('#btn-back-lobby').addEventListener('click', () => {
-  client.endGame((res) => {
+  client.leaveRoom((res) => {
     client.code = null;
     client.state = null;
     client.saveToStorage();
