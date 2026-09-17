@@ -146,6 +146,7 @@ class PestenClient {
     // opts: { name, avatar, username?, password?, playerId? }
     this.emit('create', opts, ack);
   }
+  listRooms(ack) { this.emit('listRooms', {}, ack); }
   join(code, opts, ack) {
     // opts: { name?, avatar?, playerId? }
     this.emit('join', { code, ...opts }, ack);

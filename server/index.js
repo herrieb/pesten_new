@@ -30,6 +30,21 @@ function getRoom(code) {
   return rooms.get(code);
 }
 
+function publicRooms() {
+  return [...rooms.entries()]
+    .filter(([, room]) => room.game.phase === 'waiting' && room.game.players.length < 4)
+    .map(([code, room]) => ({
+      code,
+      name: room.name || 'Spel',
+      players: room.game.players.length,
+      maxPlayers: 4,
+    }));
+}
+
+function broadcastRooms() {
+  io.emit('rooms', publicRooms());
+}
+
 function broadcast(code) {
   const room = getRoom(code);
   for (const [sockId, info] of room.sockets) {
@@ -38,6 +53,7 @@ function broadcast(code) {
   }
   // Trigger AI turn if it's now AI's turn
   setImmediate(() => maybeRunAiTurn(code));
+  broadcastRooms();
 }
 
 function broadcastChat(code) {
@@ -62,6 +78,11 @@ io.on('connection', (socket) => {
   let playerName = null;
 
   // Client can fetch the list of available AI personality profiles
+  socket.on('listRooms', (ack) => {
+    const cb = typeof ack === 'function' ? ack : null;
+    cb && cb({ ok: true, rooms: publicRooms() });
+  });
+
   socket.on('getProfiles', (ack) => {
     const cb = typeof ack === 'function' ? ack : null;
     // Strip the 'chat_tone' field from public payload; keep the rest for client display
@@ -114,6 +135,7 @@ io.on('connection', (socket) => {
       if (!ok) {
         return cb && cb({ ok: false, error: t.roomFull });
       }
+      if (!room.name) room.name = playerName + "'s spel";
       const p = room.game.players[room.game.players.length - 1];
       p.accountId = user ? user.username : null;
       socket._avatar = avatar;

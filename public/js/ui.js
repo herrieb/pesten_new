@@ -301,6 +301,27 @@ function bindAuthScreen() {
 // Bind immediately; ui.js is loaded at the end of the document.
 bindAuthScreen();
 
+function renderAvailableRooms(rooms) {
+  const wrap = $('#public-rooms');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  if (!rooms || rooms.length === 0) {
+    wrap.innerHTML = '<p class="muted">Geen open spellen</p>';
+    return;
+  }
+  rooms.forEach(room => {
+    const button = document.createElement('button');
+    button.className = 'available-room';
+    button.type = 'button';
+    button.innerHTML = '<span><b>' + escapeHtml(room.name) + '</b><small>' + room.players + '/' + room.maxPlayers + ' spelers</small></span><span>Deelnemen →</span>';
+    button.addEventListener('click', () => {
+      $('#join-code').value = room.code;
+      $('#btn-join').click();
+    });
+    wrap.appendChild(button);
+  });
+}
+
 function enterLobby() {
   // Populate lobby identity
   $('#lobby-name').textContent = client.name;
@@ -311,6 +332,7 @@ function enterLobby() {
     : 'Gast-sessie';
   $('#btn-logout').hidden = !client.accountId;
   showScreen('#screen-lobby');
+  client.listRooms((res) => renderAvailableRooms(res?.rooms || []));
 }
 
 // ============================================================
